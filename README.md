@@ -32,10 +32,21 @@ Cada novo push na branch `main` publica de novo sozinho.
 3. **Catálogo:** preencha os preços.
 4. **Painel > Simular cliente no WhatsApp** para ver a IA atender.
 
+## Salvar na nuvem (Supabase)
+
+Sem o Supabase, os dados ficam só no navegador. Com ele, clientes, conversas, funil, aprovações, agenda, catálogo, configurações e o estilo de escrita ficam salvos na nuvem e aparecem no computador e no celular.
+
+1. No [Supabase](https://supabase.com) (pode ser o mesmo projeto do site), abra **SQL Editor**, cole [`supabase/crm.sql`](supabase/crm.sql) e clique em **Run**.
+2. Em **Authentication > Users > Add user**, crie o acesso do dono (e-mail e senha, com *Auto Confirm User*).
+3. Em **Authentication > Sign In / Providers**, desligue **Allow new users to sign up**.
+4. No CRM, em **Configurações > Salvar na nuvem**, cole a Project URL e a chave *publishable* (ou *anon public*), entre com o e-mail e a senha e clique em **Conectar**.
+
+Só o usuário logado lê e grava os dados (RLS). A chave da Anthropic não vai para a nuvem: cadastre-a em cada aparelho.
+
 ## Importante
 
-- **Os dados ficam no navegador de quem usa** (clientes, conversas, catálogo e a chave da Anthropic). Nada vai para a Vercel nem para o GitHub. Por isso, o computador e o celular têm dados separados. Use **Configurações > Baixar backup** com frequência.
-- **Ninguém mais vê os seus dados:** quem abrir o mesmo endereço vê um app vazio, no navegador dele.
+- **Sem o Supabase, os dados ficam no navegador de quem usa.** O computador e o celular têm dados separados. Use **Configurações > Baixar backup** com frequência.
+- **Ninguém mais vê os seus dados:** quem abrir o mesmo endereço sem o seu login vê um app vazio.
 - **Os follow-ups saem enquanto o app estiver aberto** em algum navegador.
 - **WhatsApp:** por enquanto é um simulador. Para a IA atender o WhatsApp de verdade, é preciso um servidor que receba as mensagens (próxima fase). No WhatsApp oficial, depois de 24 horas sem o cliente falar, só é possível mandar mensagens com modelo aprovado pela Meta, o que vale para os follow-ups.
 - **Google Agenda:** no Google Cloud, cadastre o endereço da Vercel (ex.: `https://SEU-PROJETO.vercel.app`) em **Origens JavaScript autorizadas** do Client ID. O passo a passo está em Configurações > Google Agenda.
