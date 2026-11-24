@@ -51,6 +51,14 @@ nav button.ativo { background: var(--marca); color: var(--marca-texto); font-wei
 nav .ic { width: 20px; text-align: center; }
 .selo { margin-left: auto; background: var(--erro); color: #fff; border-radius: 99px; font-size: .72rem; font-weight: 700; padding: 0 7px; min-width: 20px; text-align: center; }
 nav button.ativo .selo { background: var(--marca-texto); color: var(--marca); }
+nav .curto { display: none; }
+/* Configurações em abas (coluna à esquerda) */
+.cfg { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cfg-abas { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 8px; background: var(--sup); border: 1px solid var(--borda); border-radius: 14px; padding: 8px; }
+.cfg-abas button { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 10px 12px; border-radius: 10px; cursor: pointer; text-align: left; color: var(--suave); font: inherit; font-weight: 500; }
+.cfg-abas button:hover { background: var(--sup2); color: var(--texto); }
+.cfg-abas button.ativo { background: var(--marca); color: var(--marca-texto); font-weight: 700; }
+.cfg-corpo > section > h2:first-child { margin-top: 0; }
 .rodape-lateral { margin-top: auto; font-size: .75rem; color: var(--suave); padding: 0 6px; }
 .principal { overflow-y: auto; min-width: 0; }
 body.bloqueado .app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
@@ -213,15 +221,22 @@ pre.prompt { white-space: pre-wrap; background: var(--fundo); border: 1px solid 
 .exemplo .d { margin-top: 4px; }
 
 @media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: 100dvh; }
-  .lateral { flex-direction: row; align-items: center; padding: 8px 10px; gap: 8px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--borda); }
+  /* Celular: menu numa coluna estreita à esquerda, com ícone e nome curto */
+  .app { grid-template-columns: 66px minmax(0, 1fr); grid-template-rows: 1fr; height: 100dvh; }
+  .lateral { flex-direction: column; align-items: stretch; padding: 10px 5px calc(10px + env(safe-area-inset-bottom)); gap: 10px; overflow-y: auto; overflow-x: hidden; }
+  .marca { justify-content: center; padding: 0; }
   .marca small, .marca div, .rodape-lateral { display: none; }
-  .marca img { height: 30px; }
-  nav { flex-direction: row; }
-  nav button { padding: 7px 10px; white-space: nowrap; }
+  .marca img { height: 28px; max-width: 54px; }
+  nav { flex-direction: column; gap: 4px; }
+  nav button { position: relative; flex-direction: column; justify-content: center; gap: 3px; padding: 8px 2px; text-align: center; line-height: 1.1; }
+  nav .ic { width: auto; font-size: 1.25rem; }
   nav .txt { display: none; }
-  nav button.ativo .txt { display: inline; }
-  .vista { padding: 16px 16px 60px; }
+  nav .curto { display: block; font-size: .62rem; letter-spacing: -.01em; }
+  nav .selo { position: absolute; top: 3px; right: 5px; margin: 0; font-size: .6rem; min-width: 15px; padding: 0 4px; }
+  .vista { padding: 14px 12px calc(60px + env(safe-area-inset-bottom)); }
+  .cfg { grid-template-columns: 1fr; gap: 12px; }
+  .cfg-abas { flex-direction: row; overflow-x: auto; position: static; padding: 6px; }
+  .cfg-abas button { white-space: nowrap; padding: 8px 10px; }
   .conversas { grid-template-columns: 1fr; height: 100%; }
   .conversas.aberta .conv-lista { display: none; }
   .conversas:not(.aberta) .chat { display: none; }
@@ -1166,8 +1181,8 @@ async function verificarFollowups() {
 // =====================================================================
 const rota = { vista: "painel", id: null };
 const NAV = [
-  ["painel", "📊", "Painel"], ["conversas", "💬", "Conversas"], ["funil", "🧲", "Funil de clientes"], ["aprovacoes", "🔔", "Aprovações"],
-  ["agenda", "📅", "Agenda"], ["catalogo", "📱", "Catálogo"], ["ia", "🧠", "Cérebro da IA"], ["config", "⚙️", "Configurações"],
+  ["painel", "📊", "Painel", "Painel"], ["conversas", "💬", "Conversas", "Conversas"], ["funil", "🧲", "Funil de clientes", "Funil"], ["aprovacoes", "🔔", "Aprovações", "Aprovações"],
+  ["agenda", "📅", "Agenda", "Agenda"], ["catalogo", "📱", "Catálogo", "Catálogo"], ["ia", "🧠", "Cérebro da IA", "IA"], ["config", "⚙️", "Configurações", "Config"],
 ];
 function contadores() {
   return {
@@ -1177,7 +1192,7 @@ function contadores() {
 }
 function renderNav() {
   const n = contadores();
-  $("#nav").innerHTML = NAV.map(([v, ic, txt]) => `<button data-a="ir" data-v="${v}" class="${rota.vista === v ? "ativo" : ""}"><span class="ic">${ic}</span><span class="txt">${txt}</span>${n[v] ? `<span class="selo">${n[v]}</span>` : ""}</button>`).join("");
+  $("#nav").innerHTML = NAV.map(([v, ic, txt, curto]) => `<button data-a="ir" data-v="${v}" class="${rota.vista === v ? "ativo" : ""}" title="${txt}"><span class="ic">${ic}</span><span class="txt">${txt}</span><span class="curto">${curto}</span>${n[v] ? `<span class="selo">${n[v]}</span>` : ""}</button>`).join("");
   const total = n.aprovacoes + n.conversas;
   document.title = `${total ? `(${total}) ` : ""}CRMY · ${S.config.marca.nome}`;
 }
@@ -1587,10 +1602,34 @@ function painelInspetor() {
   </div>`;
 }
 // ---------------------------------------------------------------- Configurações
+const ABAS_CONFIG = [
+  ["loja", "🏪", "Loja e marca", ["Marca", "Loja", "Dono"]],
+  ["ia", "🤖", "IA e atendimento", ["Inteligência artificial"]],
+  ["whatsapp", "💬", "WhatsApp", ["WhatsApp", "Saudação com menu", "Leads de anúncio"]],
+  ["voz", "🎙️", "Voz e áudio", ["Voz e áudio"]],
+  ["site", "🌐", "Site e agenda", ["Site da loja", "Google Agenda"]],
+  ["conta", "☁️", "Conta e backup", ["Nuvem e acesso", "Chaves antigas deste navegador", "Backup e revenda"]],
+];
+let abaConfig = (() => { try { return localStorage.getItem("crmy-aba-config") || "loja"; } catch { return "loja"; } })();
+/** Configurações em abas: todas as seções ficam na página (o Salvar pega tudo), só a aba escolhida aparece. */
 TELAS.config = () => {
+  const pedacos = configSecoes().split(/(?=<h2>)/).filter((p) => p.trim());
+  const porAba = Object.fromEntries(ABAS_CONFIG.map(([id]) => [id, []]));
+  for (const p of pedacos) {
+    const titulo = (p.match(/<h2>([^<]*)/) || [])[1]?.trim();
+    porAba[(ABAS_CONFIG.find((a) => a[3].includes(titulo)) || ABAS_CONFIG.at(-1))[0]].push(p);
+  }
+  if (!porAba[abaConfig]) abaConfig = "loja";
+  return `<h1>Configurações</h1>
+  <div class="cfg">
+    <div class="cfg-abas" role="tablist">${ABAS_CONFIG.map(([id, ic, nome]) => `<button role="tab" data-a="aba-config" data-v="${id}" class="${abaConfig === id ? "ativo" : ""}">${ic} ${nome}</button>`).join("")}</div>
+    <div class="cfg-corpo">${ABAS_CONFIG.map(([id]) => `<section data-aba="${id}" ${abaConfig === id ? "" : "hidden"}>${porAba[id].join("")}${id !== "conta" ? `<div class="linha" style="margin-top:18px"><button class="btn prim" data-a="salvar-config">Salvar configurações</button></div>` : ""}</section>`).join("")}</div>
+  </div>`;
+};
+function configSecoes() {
   const { marca, ia, loja, dono, google } = S.config;
   const origem = location.protocol === "file:" ? "" : location.origin;
-  return `<h1>Configurações</h1>
+  return `
   <h2>Marca <span class="etq">personalize para revender</span></h2>
   <div class="cartao"><div class="form">
     <label class="campo"><span>Nome da empresa</span><input type="text" id="c-marca-nome" value="${esc(marca.nome)}"></label>
@@ -1698,8 +1737,6 @@ TELAS.config = () => {
       <label class="campo largo"><span>Texto da saudação</span><textarea id="c-saudacao-texto" rows="12">${esc(S.config.saudacao.texto)}</textarea></label>
     </div>
   </div>
-
-  <div class="linha" style="margin-top:18px"><button class="btn prim" data-a="salvar-config">Salvar configurações</button></div>
 
   <h2>Nuvem e acesso</h2>
   <div class="cartao">${NUVEM.usuario ? `
@@ -2412,6 +2449,14 @@ ACOES["estudar-estilo"] = async (el) => {
 };
 
 // Configurações
+ACOES["aba-config"] = (el) => {
+  abaConfig = el.dataset.v;
+  try { localStorage.setItem("crmy-aba-config", abaConfig); } catch { /* sem armazenamento */ }
+  // Só troca o que aparece: o que você digitou nas outras abas continua lá até salvar.
+  for (const b of document.querySelectorAll(".cfg-abas button")) b.classList.toggle("ativo", b.dataset.v === abaConfig);
+  for (const sec of document.querySelectorAll(".cfg-corpo > section")) sec.hidden = sec.dataset.aba !== abaConfig;
+  document.querySelector(".principal")?.scrollTo?.({ top: 0 });
+};
 ACOES["salvar-config"] = () => {
   const cfg = S.config;
   for (const el of $$("[id^='c-']")) {
