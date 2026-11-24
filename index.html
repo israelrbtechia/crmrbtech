@@ -973,6 +973,12 @@ async function enviarAoGoogle(comp) {
 }
 async function sincronizarPendentes() {
   let n = 0;
+  // Cancelados pelo servidor (ex.: ordem do dono pelo WhatsApp) que ainda estão no Google: apaga lá.
+  for (const comp of S.compromissos.filter((x) => x.gcalId && x.status === "cancelado")) {
+    await gcal(`/events/${encodeURIComponent(comp.gcalId)}`, { method: "DELETE" }).catch(() => {});
+    comp.gcalId = null; n++;
+    salvar("compromissos");
+  }
   for (const comp of S.compromissos.filter((x) => !x.gcalId && x.status === "marcado" && deLocal(x.inicio) > new Date())) {
     await enviarAoGoogle(comp); n++;
   }

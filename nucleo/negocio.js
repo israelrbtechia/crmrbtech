@@ -617,7 +617,7 @@ export function criarNucleo(S, ctx = {}) {
   function notaDeSistema(c, notas, { pedirAudio = false, veioAudio = false } = {}) {
     const agora = new Date();
     const quando = agora.toLocaleString("pt-BR", { timeZone: FUSO, weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    const aprov = S.aprovacoes.filter((a) => a.contatoId === c.id).slice(-5).map((a) => a.tipo === "decisao" ? `#${a.codigo} decisão sobre ${a.produto} (${a.situacao}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não decidiu)" : `o dono decidiu: "${a.comentario}"`}` : `#${a.codigo} ${a.produto} por ${a.valor ? brl(a.valor) : "valor a definir"}: ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu)" : a.status === "aprovada" ? `APROVADA${a.valorFinal ? ` (valor final ${brl(a.valorFinal)})` : ""}` : "RECUSADA"}${a.comentario ? `. Dono disse: "${a.comentario}"` : ""}`);
+    const aprov = S.aprovacoes.filter((a) => a.contatoId === c.id).slice(-5).map((a) => a.tipo === "decisao" ? `#${a.codigo} decisão sobre ${a.produto} (${a.situacao}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não decidiu)" : `o dono decidiu: "${a.comentario}"`}` : `#${a.codigo} ${a.produto} por ${a.valor ? brl(a.valor) : "valor a definir"}: ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu)" : a.status === "aprovada" ? `APROVADA${a.valorFinal ? ` (valor final ${brl(a.valorFinal)})` : ""}` : a.status === "cancelada" ? "CANCELADA pelo dono (venda desfeita)" : "RECUSADA"}${a.comentario ? `. Dono disse: "${a.comentario}"` : ""}`);
     const comps = S.compromissos.filter((x) => x.contatoId === c.id && x.status !== "cancelado").map((x) => `${x.id}: ${TIPOS[x.tipo]} em ${dataHora(x.inicio)}${x.status === "feito" ? " (já aconteceu)" : ""}`);
     return [
       `Agora: ${quando} (horário de Brasília).`,
@@ -1412,11 +1412,18 @@ Escreva tudo em português do Brasil.`;
       { name: "mandar_para_cliente", strict: true, description: "Manda mensagem para um cliente que já está no CRM. Com instrucao, a IA vendedora escreve do jeito da loja e envia na hora. Use texto_exato só quando o dono ditou a mensagem palavra por palavra.", input_schema: obj({ contato_id: "string", instrucao: "string", texto_exato: "string" }, { contato_id: "id do cliente (da lista)", instrucao: "O que dizer ou fazer, ex.: avisar que o iPhone 15 chegou e chamar para retirar hoje", texto_exato: "Mensagem exata ditada pelo dono, ou vazio" }) },
       { name: "novo_cliente", strict: true, description: "Cadastra um cliente novo pelo WhatsApp e já manda a primeira mensagem (a IA escreve do jeito da loja).", input_schema: obj({ nome: "string", telefone: "string", instrucao: "string" }, { telefone: "WhatsApp com DDD", instrucao: "O que a primeira mensagem deve dizer" }) },
       { name: "mudar_modo", strict: true, description: "Muda quem responde os clientes durante o dia: auto (a IA responde sozinha), sugerir (a IA sugere e o dono aprova no CRM) ou manual (só o dono responde). À noite a IA responde sozinha se o modo noturno estiver ligado.", input_schema: obj({ modo: { type: "string", enum: Object.keys(MODOS_GERAIS) } }) },
-      { name: "atualizar_cliente", strict: true, description: "Muda o cartão de um cliente: fase do funil, temperatura, nota, e pausa ou retoma a IA naquela conversa.", input_schema: obj({ contato_id: "string", fase: { type: "string", enum: ["", ...ESTAGIOS.map((e) => e[0])] }, temperatura: { type: "string", enum: ["", ...Object.keys(TEMPERATURAS)] }, nota: "string", pausar_horas: "number" }, { pausar_horas: "Horas com a IA quieta nesta conversa; 0 = a IA volta a responder; -1 = não mexer" }) },
+      { name: "atualizar_cliente", strict: true, description: "Muda o cartão de um cliente no CRM: nome, interesse, valor, fase do funil, temperatura, próximo passo, resumo, nota, e pausa ou retoma a IA naquela conversa. Campos vazios (ou valor 0, pausar_horas -1) não mudam nada.", input_schema: obj({ contato_id: "string", nome: "string", interesse: "string", valor: "number", fase: { type: "string", enum: ["", ...ESTAGIOS.map((e) => e[0])] }, temperatura: { type: "string", enum: ["", ...Object.keys(TEMPERATURAS)] }, proximo_passo: "string", resumo: "string", nota: "string", pausar_horas: "number" }, { valor: "Valor do negócio em reais (0 = não mudar)", pausar_horas: "Horas com a IA quieta nesta conversa; 0 = a IA volta a responder; -1 = não mexer" }) },
+      { name: "cancelar_venda", strict: true, description: "Cancela a venda (ou a negociação) de um cliente no CRM: cancela os pedidos de aprovação pendentes ou aprovados, cancela retirada e entrega marcadas na agenda e tira o cartão de Fechado (vai para Perdido, ou para Em atendimento se for para retomar). Avisa a IA vendedora.", input_schema: obj({ contato_id: "string", motivo: "string", mover_para: { type: "string", enum: ["perdido", "atendimento"] } }, { motivo: "Por que foi cancelada (pode ser vazio)", mover_para: "perdido = desistiu; atendimento = continua negociando" }) },
+      { name: "cancelar_compromisso", strict: true, description: "Cancela um compromisso da agenda (retirada, entrega, orçamento, visita...).", input_schema: obj({ compromisso_id: "string", motivo: "string" }) },
       { name: "liberar_ia", strict: true, description: "Libera (ou bloqueia de novo) a IA para falar sozinha com um cliente que está fora da regra (cliente antigo, ou novo que não veio de anúncio). Liberado, a IA já responde o que estiver esperando.", input_schema: obj({ contato_id: "string", liberar: "boolean" }) },
       { name: "ensinar_ia", strict: true, description: "Guarda uma regra nova nas instruções da IA vendedora: preço, política, jeito de vender, produto que chegou ou acabou.", input_schema: obj({ regra: "string" }, { regra: "A regra, curta e clara, ex.: o iPhone 13 128GB seminovo agora é R$ 2.599" }) },
       { name: "ver_conversa", strict: true, description: "Mostra as últimas mensagens de uma conversa com cliente.", input_schema: obj({ contato_id: "string" }) },
     ];
+  }
+  /** Pedidos de aprovação do cliente, para o assistente do dono saber o que é "a venda". */
+  function vendasDe(contatoId) {
+    const ap = S.aprovacoes.filter((a) => a.contatoId === contatoId && a.tipo !== "decisao" && a.status !== "recusada").slice(-3);
+    return ap.length ? ` | pedidos: ${ap.map((a) => `#${a.codigo} ${a.produto} ${brl(a.valorFinal || a.valor)} (${a.status})`).join("; ")}` : "";
   }
   function contextoDono() {
     const agora = new Date();
@@ -1424,10 +1431,10 @@ Escreva tudo em português do Brasil.`;
     const ativos = S.contatos.filter((c) => !c.teste).sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm))).slice(0, 30).map((c) => {
       const ult = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1);
       const quem = ult ? { cliente: "cliente", ia: "IA", dono: "você" }[ult.de] || ult.de : "";
-      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}${iaPodeAtender(c) ? "" : " | IA bloqueada (fora da regra)"}`;
+      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}${iaPodeAtender(c) ? "" : " | IA bloqueada (fora da regra)"}${vendasDe(c.id)}`;
     });
-    const fim = new Date(agora.getTime() + 2 * 864e5);
-    const comps = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= agora && deLocal(x.inicio) <= fim).map((x) => `${dataHora(deLocal(x.inicio).toISOString())} ${TIPOS[x.tipo]} com ${nomeCli(contato(x.contatoId))}`);
+    const fim = new Date(agora.getTime() + 7 * 864e5);
+    const comps = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= new Date(agora.getTime() - 864e5) && deLocal(x.inicio) <= fim).map((x) => `${x.id} | ${dataHora(deLocal(x.inicio).toISOString())} | ${TIPOS[x.tipo]} | ${nomeCli(contato(x.contatoId))} (${x.contatoId})`);
     const a = S.config.atendimento;
     return [
       `Agora: ${agora.toLocaleString("pt-BR", { timeZone: FUSO, weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} (Brasília).`,
@@ -1435,7 +1442,7 @@ Escreva tudo em português do Brasil.`;
       `Quem responde os clientes agora: ${MODOS_GERAIS[modoEfetivo(null, agora)] || "-"}${noturno(agora) ? " (modo noturno)" : ""}. Modo do dia: ${MODOS_GERAIS[a.modoDia] || a.modoDia}. Modo noturno: ${a.noiteAtiva ? `das ${a.noiteInicio} às ${a.noiteFim}` : "desligado"}.`,
       pend.length ? `Pedidos esperando o dono:\n${pend.join("\n")}` : "Nenhum pedido esperando o dono.",
       `Clientes mais recentes (id | nome | WhatsApp | fase | temperatura | interesse | resumo | última mensagem):\n${ativos.join("\n") || "(nenhum)"}`,
-      comps.length ? `Agenda dos próximos 2 dias:\n${comps.join("\n")}` : "",
+      comps.length ? `Agenda (id | quando | tipo | cliente):\n${comps.join("\n")}` : "Agenda: nada marcado para os próximos dias.",
     ].filter(Boolean).join("\n\n");
   }
   async function executarFerramentaDono(nome, ent, saida) {
@@ -1486,6 +1493,11 @@ Escreva tudo em português do Brasil.`;
       case "atualizar_cliente": {
         const c = cli(ent.contato_id);
         const feito = [];
+        if (String(ent.nome || "").trim() && ent.nome.trim() !== c.nome) { c.nome = ent.nome.trim(); feito.push("nome"); }
+        if (String(ent.interesse || "").trim()) { c.interesse = ent.interesse.trim(); feito.push("interesse"); }
+        if (Number(ent.valor) > 0) { c.valor = Number(ent.valor); feito.push(`valor ${brl(c.valor)}`); }
+        if (String(ent.proximo_passo || "").trim()) { c.proximoPasso = ent.proximo_passo.trim(); feito.push("próximo passo"); }
+        if (String(ent.resumo || "").trim()) { c.resumo = ent.resumo.trim(); feito.push("resumo"); }
         if (ent.fase && NOME_ESTAGIO[ent.fase] && ent.fase !== c.estagio) { mudarEstagio(c, ent.fase, "voce"); feito.push(`fase ${NOME_ESTAGIO[ent.fase]}`); }
         if (ent.temperatura && TEMPERATURAS[ent.temperatura]) { c.temperatura = ent.temperatura; feito.push(`temperatura ${ent.temperatura}`); }
         if (String(ent.nota || "").trim()) { c.notas = `${c.notas ? `${c.notas}\n` : ""}${dataCurta(agoraISO())}: ${ent.nota.trim()}`; feito.push("nota"); }
@@ -1495,6 +1507,41 @@ Escreva tudo em português do Brasil.`;
         c.atualizadoEm = agoraISO();
         salvar("contatos");
         return { ok: true, cliente: nomeCli(c), feito };
+      }
+      case "cancelar_venda": {
+        const c = cli(ent.contato_id);
+        const feito = [];
+        const motivo = String(ent.motivo || "").trim();
+        for (const a of S.aprovacoes.filter((x) => x.contatoId === c.id && (x.status === "pendente" || x.status === "aprovada"))) {
+          a.status = "cancelada"; a.canceladaEm = agoraISO(); if (motivo) a.comentario = motivo;
+          feito.push(`pedido #${a.codigo} cancelado`);
+        }
+        for (const x of S.compromissos.filter((x) => x.contatoId === c.id && x.status === "marcado" && ["retirada_produto", "entrega_iphone"].includes(x.tipo))) {
+          x.status = "cancelado";
+          if (x.gcalId && G.conectado()) { await G.apagar(x.gcalId).catch(() => {}); x.gcalId = null; }
+          feito.push(`${TIPOS[x.tipo]} de ${dataHora(deLocal(x.inicio).toISOString())} cancelada`);
+        }
+        const destino = ent.mover_para === "atendimento" ? "atendimento" : "perdido";
+        mudarEstagio(c, destino, "voce");
+        c.fechadoEm = null;
+        if (destino === "perdido") { c.temperatura = "frio"; c.proximoPasso = ""; } else c.proximoPasso = "Retomar a negociação";
+        c.resumo = `Venda cancelada pelo dono${motivo ? `: ${motivo}` : ""}`;
+        c.notas = `${c.notas ? `${c.notas}\n` : ""}${dataCurta(agoraISO())}: venda cancelada pelo dono${motivo ? ` (${motivo})` : ""}`;
+        feito.push(`cartão em ${NOME_ESTAGIO[destino]}`);
+        conversa(c.id).notas.push(`O DONO CANCELOU A VENDA deste cliente${motivo ? ` (motivo: ${motivo})` : ""}. Não trate mais como fechada nem confirme entrega ou retirada. Só fale disso com o cliente se ele perguntar ou se o dono pedir.`);
+        evento(c.id, `🚫 O dono cancelou a venda${motivo ? `: ${motivo}` : ""}`);
+        salvar("aprovacoes", "compromissos", "contatos", `conv:${c.id}`);
+        return { ok: true, cliente: nomeCli(c), feito };
+      }
+      case "cancelar_compromisso": {
+        const x = S.compromissos.find((k) => k.id === ent.compromisso_id);
+        if (!x) return { erro: "Compromisso não encontrado." };
+        if (x.status === "cancelado") return { ok: true, aviso: "Já estava cancelado." };
+        x.status = "cancelado";
+        if (x.gcalId && G.conectado()) { await G.apagar(x.gcalId).catch(() => {}); x.gcalId = null; }
+        evento(x.contatoId, `❌ O dono cancelou: ${TIPOS[x.tipo]} de ${dataHora(deLocal(x.inicio).toISOString())}${ent.motivo ? ` (${ent.motivo})` : ""}`);
+        salvar("compromissos");
+        return { ok: true, cancelado: `${TIPOS[x.tipo]} de ${dataHora(deLocal(x.inicio).toISOString())} com ${nomeCli(contato(x.contatoId))}` };
       }
       case "liberar_ia": {
         const c = cli(ent.contato_id);
@@ -1550,6 +1597,8 @@ Escreva tudo em português do Brasil.`;
 - Mudança de preço, produto que chegou ou acabou, política ou jeito de vender: ensinar_ia.
 - A IA só fala sozinha com clientes novos que chegam de anúncio (regra da loja). Se ele pedir para a IA atender um cliente antigo ou fora da regra ("libera o João", "pode atender a Ana"), use liberar_ia.
 - Use só o que está no contexto e nas ferramentas. Não invente cliente, preço nem conversa.
+- Toda ordem que muda o CRM (cancelar venda, mudar fase, valor, nome, agenda, liberar IA...) só está feita depois que a ferramenta respondeu ok. Nunca diga que fez algo sem ter usado a ferramenta. Se não existe ferramenta para o que ele pediu, diga que não consegue fazer por aqui e que ele pode fazer no CRM.
+- "Cancela a venda do João" = cancelar_venda. Cancelar só um compromisso = cancelar_compromisso.
 - Responda curto, como um braço direito de confiança no WhatsApp: diga em uma ou duas linhas o que você fez, ou responda a pergunta dele. Se não deu para fazer, diga por quê. Sem markdown além de *negrito*.`;
     const mensagens = [{ role: "user", content: [{ type: "text", text: `${contextoDono()}\n\n${historico ? `# Conversa recente com o dono\n${historico}\n\n` : ""}# Mensagem nova do dono\n${t}` }] }];
     const tools = ferramentasDono();
