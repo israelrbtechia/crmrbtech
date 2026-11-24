@@ -12,6 +12,10 @@ CRM da RBTech Celulares com uma IA (Claude, da Anthropic) que atende clientes, v
 - **Catálogo de iPhones** e **aprendizado do estilo do dono** a partir de conversas exportadas do WhatsApp.
 - **Marca personalizável** (nome, logo, cor) e pacote de configuração para revender a outras lojas.
 
+## Custo da IA
+
+O modelo padrão é o **Claude Haiku 5.5**, o mais barato: para 20 a 25 clientes por dia, fica em torno de **US$ 5 a 10 por mês**. Em Configurações > Inteligência artificial dá para trocar pelo Sonnet 5.5 (cerca de US$ 100 a 175 por mês) ou pelo Opus 5.5 (cerca de US$ 200 a 350 por mês), que negociam melhor. O Painel mostra o gasto estimado do mês.
+
 ## Publicar na Vercel
 
 1. Em [vercel.com](https://vercel.com) > **Add New > Project**, importe este repositório.
