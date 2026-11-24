@@ -373,10 +373,10 @@ async function carregarTudo() {
   }
   S.config = mesclar(CONFIG_PADRAO, S.config);
   S.estilo = mesclar(ESTILO_PADRAO, S.estilo);
-  if ((S.config.ia.regrasVersao || 1) < 3) {
+  if ((S.config.ia.regrasVersao || 1) < 4) {
     S.config.ia.instrucoes = atualizarRegras(S.config.ia.instrucoes);
     S.config.loja.pagamento = String(S.config.loja.pagamento || "").replace(/\s*Não fazemos boleto\.?\s*$/i, "");
-    S.config.ia.regrasVersao = 3;
+    S.config.ia.regrasVersao = 4;
     await kvSet("config", S.config);
   }
   if (!S.config.atendimento.migrouModo) {
