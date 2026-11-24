@@ -2,19 +2,48 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/anthropic/v1/messages", "destination": "/api/anthropic" }
+    {
+      "source": "/api/anthropic/v1/messages",
+      "destination": "/api/anthropic"
+    }
   ],
   "functions": {
-    "api/anthropic.js": { "maxDuration": 300 }
+    "api/anthropic.js": {
+      "maxDuration": 300
+    },
+    "api/whatsapp.js": {
+      "maxDuration": 300
+    },
+    "api/atender.js": {
+      "maxDuration": 300
+    },
+    "api/rotina.js": {
+      "maxDuration": 300
+    }
   },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "same-origin" }
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "same-origin"
+        }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/rotina",
+      "schedule": "7 13 * * *"
     }
   ]
 }

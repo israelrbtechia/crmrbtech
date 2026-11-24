@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRMY · Quem responde</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20120%20120%22%20role%3D%22img%22%20aria-label%3D%22CRMY%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%233dff9a%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2300c853%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%3C/defs%3E%0A%20%20%3Crect%20width%3D%22120%22%20height%3D%22120%22%20rx%3D%2228%22%20fill%3D%22%230a0a0a%22/%3E%0A%20%20%3Crect%20x%3D%221.5%22%20y%3D%221.5%22%20width%3D%22117%22%20height%3D%22117%22%20rx%3D%2226.5%22%20fill%3D%22none%22%20stroke%3D%22%231d1d1d%22%20stroke-width%3D%223%22/%3E%0A%20%20%3C%21--%20bal%C3%A3o%20de%20conversa%20--%3E%0A%20%20%3Cpath%20d%3D%22M30%2034h60a10%2010%200%200%201%2010%2010v30a10%2010%200%200%201-10%2010H56l-14%2012v-12H30a10%2010%200%200%201-10-10V44a10%2010%200%200%201%2010-10z%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%226%22%20stroke-linejoin%3D%22round%22/%3E%0A%20%20%3C%21--%20Y%20em%20circuito%3A%20duas%20conex%C3%B5es%20que%20viram%20uma%20--%3E%0A%20%20%3Cpath%20d%3D%22M44%2048l16%2014%2016-14M60%2062v12%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%226%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%0A%20%20%3Ccircle%20cx%3D%2244%22%20cy%3D%2248%22%20r%3D%225%22%20fill%3D%22%230a0a0a%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%224%22/%3E%0A%20%20%3Ccircle%20cx%3D%2276%22%20cy%3D%2248%22%20r%3D%225%22%20fill%3D%22%230a0a0a%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%224%22/%3E%0A%20%20%3Ccircle%20cx%3D%2260%22%20cy%3D%2262%22%20r%3D%224%22%20fill%3D%22url%28%23g%29%22/%3E%0A%3C/svg%3E">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --verde: #1fe27a; --fundo: #0a0a0a; --sup: #161616; --borda: #2a2a2a; --texto: #fff; --suave: #9a9a9a; --erro: #ff6b6b; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--fundo); color: var(--texto); font: 16px/1.5 "Poppins", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 28px 16px 40px; }
+.logo { width: min(320px, 82vw); height: auto; margin-bottom: 26px; }
+.cartao { width: min(420px, 100%); background: var(--sup); border: 1px solid var(--borda); border-radius: 22px; padding: 22px; text-align: center; }
+h1 { font-size: 1.05rem; font-weight: 600; color: var(--suave); margin: 0 0 18px; }
+.botao { width: 230px; height: 230px; max-width: 70vw; max-height: 70vw; border-radius: 50%; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin: 4px auto 18px; font: inherit; color: #04140a; transition: transform .12s, box-shadow .2s, background .2s; -webkit-tap-highlight-color: transparent; }
+.botao:active { transform: scale(.96); }
+.botao .ic { font-size: 3.4rem; line-height: 1; }
+.botao .tx { font-weight: 800; font-size: 1.12rem; line-height: 1.2; padding: 0 18px; }
+.botao.auto { background: var(--verde); box-shadow: 0 0 0 10px rgba(31, 226, 122, .15), 0 0 46px rgba(31, 226, 122, .35); }
+.botao.sugerir { background: #ffd60a; box-shadow: 0 0 0 10px rgba(255, 214, 10, .14), 0 0 46px rgba(255, 214, 10, .3); }
+.botao.manual { background: #e8e8e8; box-shadow: 0 0 0 10px rgba(255, 255, 255, .08); }
+.botao:disabled { opacity: .6; cursor: wait; }
+.passos { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.passos span { font-size: .78rem; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--borda); color: var(--suave); }
+.passos span.ativo { border-color: var(--verde); color: var(--verde); font-weight: 700; }
+.dica { font-size: .85rem; color: var(--suave); margin: 10px 0 0; }
+.noite { margin: 0 0 16px; padding: 12px 14px; border-radius: 14px; background: rgba(31, 226, 122, .08); border: 1px solid rgba(31, 226, 122, .35); font-size: .9rem; text-align: left; }
+label { display: block; text-align: left; font-size: .85rem; color: var(--suave); margin: 10px 0 4px; }
+input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--borda); background: var(--fundo); color: var(--texto); font: inherit; }
+input:focus { outline: 2px solid var(--verde); border-color: transparent; }
+.entrar { width: 100%; margin-top: 16px; padding: 13px; border: 0; border-radius: 12px; background: var(--verde); color: #04140a; font: inherit; font-weight: 700; cursor: pointer; }
+.erro { color: var(--erro); font-size: .88rem; min-height: 1.2em; margin: 10px 0 0; }
+.rodape { margin-top: 22px; font-size: .85rem; display: flex; gap: 16px; }
+.rodape a, .rodape button { color: var(--suave); background: none; border: 0; font: inherit; cursor: pointer; text-decoration: underline; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120" role="img" aria-label="CRMY">
+  <defs>
+    <linearGradient id="gmodo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3dff9a"/>
+      <stop offset="1" stop-color="#00c853"/>
+    </linearGradient>
+  </defs>
+  <!-- ícone -->
+  <rect width="120" height="120" rx="28" fill="#0a0a0a"/>
+  <rect x="1.5" y="1.5" width="117" height="117" rx="26.5" fill="none" stroke="#1d1d1d" stroke-width="3"/>
+  <path d="M30 34h60a10 10 0 0 1 10 10v30a10 10 0 0 1-10 10H56l-14 12v-12H30a10 10 0 0 1-10-10V44a10 10 0 0 1 10-10z" fill="none" stroke="url(#gmodo)" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M44 48l16 14 16-14M60 62v12" fill="none" stroke="url(#gmodo)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="44" cy="48" r="5" fill="#0a0a0a" stroke="url(#gmodo)" stroke-width="4"/>
+  <circle cx="76" cy="48" r="5" fill="#0a0a0a" stroke="url(#gmodo)" stroke-width="4"/>
+  <circle cx="60" cy="62" r="4" fill="url(#gmodo)"/>
+  <!-- CRMY: letras em traço único, cantos de circuito -->
+  <g fill="none" stroke="#f5f5f5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M216 34h-38a12 12 0 0 0-12 12v28a12 12 0 0 0 12 12h38"/>
+    <path d="M236 86V34h30a14 14 0 0 1 0 28h-30M262 62l18 24"/>
+    <path d="M302 86V34l22 30 22-30v52"/>
+  </g>
+  <g fill="none" stroke="url(#gmodo)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M370 34l22 26 22-26M392 60v26"/>
+  </g>
+  <circle cx="370" cy="34" r="7.5" fill="#0a0a0a" stroke="url(#gmodo)" stroke-width="5"/>
+  <circle cx="414" cy="34" r="7.5" fill="#0a0a0a" stroke="url(#gmodo)" stroke-width="5"/>
+  <circle cx="392" cy="60" r="5" fill="url(#gmodo)"/>
+  <text x="168" y="111" fill="#8a8a8a" font-family="Poppins, Arial, sans-serif" font-size="12" font-weight="600" textLength="254" lengthAdjust="spacingAndGlyphs">CRM COM INTELIGÊNCIA ARTIFICIAL</text>
+</svg>
+<main class="cartao" id="tela-login" hidden>
+  <h1>Entre para trocar quem responde</h1>
+  <form id="form-login">
+    <label for="usuario">Usuário</label><input id="usuario" autocomplete="username" autocapitalize="off" required>
+    <label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required>
+    <button class="entrar" type="submit">Entrar</button>
+  </form>
+  <p class="erro" id="erro-login"></p>
+</main>
+<main class="cartao" id="tela-modo" hidden>
+  <div class="noite" id="noite" hidden></div>
+  <h1>Durante o dia, quem responde os clientes</h1>
+  <button class="botao" id="botao" type="button" aria-live="polite"><span class="ic" id="ic"></span><span class="tx" id="tx"></span></button>
+  <div class="passos" id="passos"></div>
+  <p class="dica">Toque no botão para trocar.</p>
+  <p class="erro" id="erro-modo"></p>
+</main>
+<div class="rodape"><a href="/">Abrir o CRM</a><button type="button" id="sair" hidden>Sair</button></div>
+<script>
+const MODOS = [
+  ["auto", "🤖", "A IA responde sozinha"],
+  ["sugerir", "✍️", "A IA sugere, eu aprovo"],
+  ["manual", "🙋", "Eu respondo"],
+];
+const CHAVE = "crmy-modo-sessao";
+let sessao = null, cfg = null, estado = null;
+const $ = (id) => document.getElementById(id);
+const ler = () => { try { return JSON.parse(localStorage.getItem(CHAVE) || "null"); } catch { return null; } };
+const guardar = (s) => { try { s ? localStorage.setItem(CHAVE, JSON.stringify(s)) : localStorage.removeItem(CHAVE); } catch { /* sem localStorage */ } };
+
+async function renovar() {
+  if (!sessao?.refresh_token || !cfg?.supabaseUrl) return false;
+  const r = await fetch(`${cfg.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, { method: "POST", headers: { apikey: cfg.supabaseChave, "content-type": "application/json" }, body: JSON.stringify({ refresh_token: sessao.refresh_token }) }).catch(() => null);
+  if (!r?.ok) return false;
+  const d = await r.json();
+  sessao = { access_token: d.access_token, refresh_token: d.refresh_token };
+  guardar(sessao);
+  return true;
+}
+async function api(metodo, corpo) {
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    const r = await fetch("/api/modo", { method: metodo, headers: { "content-type": "application/json", "x-crm-sessao": sessao?.access_token || "" }, body: corpo ? JSON.stringify(corpo) : undefined });
+    if (r.status === 401 && tentativa === 0 && (await renovar())) continue;
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 401) { sair(); throw new Error("Entre de novo."); }
+    if (!r.ok) throw new Error(d.erro || `erro ${r.status}`);
+    return d;
+  }
+}
+function mostrar(d) {
+  estado = d;
+  const [, ic, tx] = MODOS.find((m) => m[0] === d.modoDia) || MODOS[1];
+  $("botao").className = `botao ${d.modoDia}`;
+  $("ic").textContent = ic;
+  $("tx").textContent = tx;
+  $("passos").innerHTML = MODOS.map(([k, i, t]) => `<span class="${k === d.modoDia ? "ativo" : ""}">${i} ${t}</span>`).join("");
+  $("noite").hidden = !d.noturno;
+  $("noite").textContent = d.noturno ? `🌙 Agora é noite (${d.noiteInicio} às ${d.noiteFim}): a IA está respondendo sozinha. O botão volta a valer às ${d.noiteFim}.` : "";
+}
+function telaLogin() { $("tela-login").hidden = false; $("tela-modo").hidden = true; $("sair").hidden = true; $("usuario").focus(); }
+async function telaModo() {
+  $("tela-login").hidden = true; $("tela-modo").hidden = false; $("sair").hidden = false;
+  try { mostrar(await api("GET")); } catch (e) { $("erro-modo").textContent = e.message; }
+}
+function sair() { sessao = null; guardar(null); telaLogin(); }
+
+$("form-login").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("erro-login").textContent = "";
+  const r = await fetch("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ usuario: $("usuario").value, senha: $("senha").value }) }).catch(() => null);
+  const d = r ? await r.json().catch(() => ({})) : {};
+  if (!r?.ok) { $("erro-login").textContent = d.erro || "Não consegui entrar."; return; }
+  sessao = { access_token: d.access_token, refresh_token: d.refresh_token };
+  guardar(sessao);
+  telaModo();
+});
+$("botao").addEventListener("click", async () => {
+  if (!estado) return;
+  const i = MODOS.findIndex((m) => m[0] === estado.modoDia);
+  const proximo = MODOS[(i + 1) % MODOS.length][0];
+  $("botao").disabled = true;
+  $("erro-modo").textContent = "";
+  mostrar({ ...estado, modoDia: proximo }); // troca na hora; confirma com o servidor
+  try { mostrar(await api("POST", { modoDia: proximo })); } catch (e) { $("erro-modo").textContent = e.message; telaModo(); }
+  $("botao").disabled = false;
+});
+$("sair").addEventListener("click", sair);
+
+(async () => {
+  cfg = await fetch("/api/config", { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+  if (!cfg?.login) { $("tela-login").hidden = false; $("erro-login").textContent = "O login ainda não está configurado na Vercel."; return; }
+  sessao = ler();
+  if (sessao?.access_token) telaModo(); else telaLogin();
+  setInterval(() => { if (sessao && !document.hidden) api("GET").then(mostrar).catch(() => {}); }, 60000);
+})();
+</script>
+</body>
+</html>

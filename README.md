@@ -20,6 +20,26 @@ CRM da RBTech Celulares com uma IA (Claude, da Anthropic) que atende clientes, v
 
 O modelo padrão é o **Claude Haiku 5.5**, o mais barato: para 20 a 25 clientes por dia, fica em torno de **US$ 5 a 10 por mês**. Em Configurações > Inteligência artificial dá para trocar pelo Sonnet 5.5 (cerca de US$ 100 a 175 por mês) ou pelo Opus 5.5 (cerca de US$ 200 a 350 por mês), que negociam melhor. O Painel mostra o gasto estimado do mês.
 
+## WhatsApp de verdade, 24 horas (Z-API)
+
+A IA roda no servidor (`api/whatsapp.js` → `lib/atendimento.js`, com o mesmo núcleo do CRM em `nucleo/negocio.js`) e atende mesmo com o CRM fechado:
+
+- **À noite** (padrão: das 20h às 8h, em Configurações > Inteligência artificial) a IA responde sozinha.
+- **De dia** vale o botão em **`/modo`**: um toque alterna entre *A IA responde sozinha*, *A IA sugere, eu aprovo* (a sugestão aparece no CRM) e *Eu respondo*.
+- **Aprovações** chegam no WhatsApp do dono (Configurações > Dono). Responda `sim`, `não` ou `sim 3799`; com mais de um pedido, `A2 sim`.
+- **Quando você responde pelo celular**, a mensagem entra no CRM, a IA aprende com ela e fica quieta naquela conversa por algumas horas.
+- **Áudios** do cliente são transcritos; com a voz configurada, a IA responde com um áudio curto na voz do dono.
+- **Follow-ups** saem pela rotina `/api/rotina`: uma vez por dia pela agenda da Vercel (10h07), a cada 10 minutos enquanto o CRM estiver aberto em algum aparelho, ou por um agendador externo chamando `https://SEU-SITE/api/rotina?chave=ZAPI_WEBHOOK_SEGREDO`.
+
+Para ligar:
+
+1. Na [Z-API](https://z-api.io), crie uma instância e leia o QR Code com o celular da loja (WhatsApp > Aparelhos conectados).
+2. Cadastre na Vercel `ZAPI_INSTANCIA`, `ZAPI_TOKEN`, `ZAPI_WEBHOOK_SEGREDO` (e `ZAPI_CLIENT_TOKEN`, se ativou o token de segurança) e faça Redeploy.
+3. Na Z-API, em Webhooks, cadastre `https://SEU-SITE/api/whatsapp?chave=ZAPI_WEBHOOK_SEGREDO` em **Ao receber** e ative **Notificar as enviadas por mim** com o mesmo endereço. Abrindo esse endereço no navegador, ele diz se a chave está certa.
+4. No CRM, em Configurações > Dono, coloque o seu WhatsApp **pessoal** (é para onde vão os pedidos de aprovação).
+
+A Z-API não é a API oficial do WhatsApp: o número pode ser banido, principalmente com muitas mensagens para quem não falou com você. A IA só responde quem chamou e faz poucos follow-ups, o que reduz o risco.
+
 ## Resposta em áudio (rapport)
 
 Com `ELEVENLABS_API_KEY` e `ELEVENLABS_VOICE_ID`, quando o cliente manda áudio a IA responde com um áudio curto **na voz clonada do dono** (cumprimenta, mostra que entendeu, cria conexão) e manda preços e parcelas em texto logo depois. Os áudios dos clientes são transcritos (`api/transcrever.js`, ElevenLabs Speech to Text) e a fala é gerada em `api/voz.js`. Em **Configurações > Voz e áudio** dá para escolher quando responder em áudio e ouvir um teste da voz.
@@ -47,6 +67,11 @@ Logos em [`marca/`](marca/): `crmy-logo.svg` (fundo escuro), `crmy-logo-fundo-cl
 | `ELEVENLABS_API_KEY` | Chave da API da ElevenLabs, para a IA responder em áudio com a sua voz (opcional). Marque como **Sensitive**. |
 | `ELEVENLABS_VOICE_ID` | ID da voz clonada na ElevenLabs (opcional) |
 | `ELEVENLABS_MODEL` | Modelo da fala (opcional; padrão `eleven_multilingual_v2`) |
+| `ZAPI_INSTANCIA` | ID da instância na Z-API (WhatsApp de verdade) |
+| `ZAPI_TOKEN` | Token da instância na Z-API. Marque como **Sensitive**. |
+| `ZAPI_CLIENT_TOKEN` | Token de segurança da conta Z-API, se você ativou (opcional). Marque como **Sensitive**. |
+| `ZAPI_WEBHOOK_SEGREDO` | Uma senha que você inventa; vai no endereço cadastrado na Z-API |
+| `CRON_SECRET` | Senha da rotina diária de follow-ups da Vercel (opcional; a Vercel manda sozinha) |
 
 4. Clique em **Deploy** (ou, se o projeto já existia, **Deployments > ⋯ > Redeploy**, porque variável nova só vale depois de publicar de novo).
 

@@ -22,6 +22,8 @@ export function GET() {
       googleClientId: env.GOOGLE_CLIENT_ID,
       // Voz clonada (ElevenLabs): só com login, como a IA.
       voz: tem("ELEVENLABS_API_KEY") && tem("ELEVENLABS_VOICE_ID") && login,
+      // WhatsApp de verdade (Z-API): o servidor atende 24 h.
+      zap: tem("ZAPI_INSTANCIA") && tem("ZAPI_TOKEN") && tem("ZAPI_WEBHOOK_SEGREDO") && tem("ANTHROPIC_API_KEY") && login,
       faltando: NECESSARIAS.filter((n) => !tem(n)),
     },
     { headers: { "cache-control": "no-store" } },
