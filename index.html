@@ -2030,7 +2030,11 @@ ACOES["fu-regras"] = () => {
   abrirModal("Regras de follow-up", `
     <p class="suave peq">Quando o cliente para de responder, a IA manda uma mensagem para retomar a conversa, do seu jeito. Se ele voltar a falar, a sequência zera. Se não responder a nenhuma, o cartão vai para <b>Perdido</b>, e volta sozinho para o funil se ele aparecer de novo.</p>
     <div class="form">
-      <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="fu-ativo" ${f.ativo ? "checked" : ""}> <b>Follow-up automático ligado</b></label>
+      <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="fu-agente" ${f.agente !== false ? "checked" : ""}> <b>Agente de follow-up</b> (WhatsApp): reativa quem parou de responder depois da proposta e faz o pós-venda</label>
+      <label class="campo"><span>Rodadas por dia <small>(horários)</small></span><input type="text" id="fu-horarios" value="${esc(f.horarios || "10:00, 14:00, 18:00")}"></label>
+      <label class="campo"><span>Reativar quem não respondeu à proposta depois de <small>(dias)</small></span><input type="number" id="fu-reativar" min="1" value="${esc(f.reativarDias || 3)}"></label>
+      <label class="campo"><span>Pós-venda depois da compra <small>(dias; compra = PDF de recibo/proposta aceita ou cartão em Fechado)</small></span><input type="number" id="fu-posvenda" min="1" value="${esc(f.posVendaDias || 7)}"></label>
+      <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="fu-ativo" ${f.ativo ? "checked" : ""}> <b>Follow-up automático ligado</b> <small class="suave">(com o agente ligado, a sequência abaixo vale só para os clientes de teste)</small></label>
       <label class="campo largo"><span>Dias sem resposta antes de cada tentativa <small>(separados por vírgula; "1, 3, 7" = 1º depois de 1 dia, 2º 3 dias depois do 1º, 3º 7 dias depois do 2º)</small></span><input type="text" id="fu-dias" value="${esc(f.dias)}"></label>
       <div class="campo largo"><span>Fases que recebem follow-up</span><div class="linha">${ESTAGIOS.filter(([k]) => k !== "fechado").map(([k, v]) => `<label class="etq" style="cursor:pointer;padding:5px 10px"><input type="checkbox" class="fu-est" value="${k}" ${f.estagios.includes(k) ? "checked" : ""}> ${v}</label>`).join("")}</div></div>
       <label class="campo"><span>Mover para Perdido depois de <small>(dias após a última tentativa; 0 = nunca)</small></span><input type="number" id="fu-perdido" min="0" value="${f.perdidoApos}"></label>
@@ -2045,6 +2049,10 @@ ACOES["fu-regras"] = () => {
     S.config.followup = {
       ...f,
       ativo: $("#fu-ativo").checked,
+      agente: $("#fu-agente").checked,
+      horarios: $("#fu-horarios").value.trim() || "10:00, 14:00, 18:00",
+      reativarDias: Math.max(1, Number($("#fu-reativar").value) || 3),
+      posVendaDias: Math.max(1, Number($("#fu-posvenda").value) || 7),
       dias: dias || "1, 3, 7",
       estagios: $$(".fu-est").filter((x) => x.checked).map((x) => x.value),
       perdidoApos: Math.max(0, Number($("#fu-perdido").value) || 0),

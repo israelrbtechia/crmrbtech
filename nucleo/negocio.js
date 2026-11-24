@@ -214,6 +214,8 @@ export const CONFIG_PADRAO = {
   // Lead de anúncio: chega com mensagem pronta; a IA qualifica em vez de responder ao pé da letra.
   anuncio: { ativo: true, semMenu: true, frases: FRASES_ANUNCIO_PADRAO, instrucoes: QUALIFICAR_ANUNCIO_PADRAO },
   followup: {
+    // Agente de follow-up: 3 vezes por dia, reativa quem parou depois da proposta e faz o pós-venda.
+    agente: true, horarios: "10:00, 14:00, 18:00", reativarDias: 3, posVendaDias: 7,
     ativo: true,
     dias: "1, 3, 7",
     estagios: ["novo", "atendimento"],
@@ -1215,6 +1217,99 @@ Escreva tudo em português do Brasil.`;
     return `🔍 *Inspeção de vendas*: nota ${insp.nota}/10\n\n${insp.resumo}\n\n${insp.melhorias.length ? `*Melhorias sugeridas:*\n${insp.melhorias.map((m, i) => `${i + 1}. ${m.titulo} (${m.prioridade})`).join("\n")}\n\nPara aplicar, abra o CRM em Cérebro da IA > Inspetor de vendas.` : "Nenhuma melhoria nova desta vez. 👍"}`;
   }
 
+  // ---------------------------------------------------------------- agente de follow-up
+  const RE_PRECO = /R\$\s?\d/;
+  /** PDF de recibo, nota, venda ou proposta aceita enviado pela loja. */
+  const documentoVenda = (m) => {
+    const d = String(m.texto || "").match(/^\[documento: ([^\]]*)\]/i);
+    return Boolean(d && /recibo|venda|nota|proposta|pedido|comprovante|contrato|\.pdf/i.test(d[1]));
+  };
+  /** Quando o cliente comprou: PDF de recibo/proposta aceita mandado pela loja, ou cartão em Fechado. */
+  function dataDaCompra(c) {
+    const recibo = [...mensagensReais(c.id)].reverse().find((m) => m.de !== "cliente" && documentoVenda(m));
+    if (recibo) return { em: recibo.em, recibo };
+    if (["fechado", "posvenda"].includes(c.estagio) && c.fechadoEm) return { em: c.fechadoEm, recibo: null };
+    return null;
+  }
+  /** Última proposta da loja (preço ou documento) que o cliente ainda não respondeu. */
+  function propostaSemResposta(c) {
+    const msgs = mensagensReais(c.id);
+    const ultCli = [...msgs].reverse().find((m) => m.de === "cliente");
+    return [...msgs].reverse().find((m) => (m.de === "ia" || m.de === "dono") && (!ultCli || m.em > ultCli.em) && (RE_PRECO.test(m.texto || "") || /^\[documento:/i.test(m.texto || ""))) || null;
+  }
+  /** Modo da conversa sem a regra "só clientes novos de anúncio" (pós-venda vale para quem comprou). */
+  function modoSemRegra(c, agora = new Date()) {
+    if (c?.pausadoAte && new Date(c.pausadoAte) > agora) return "manual";
+    const proprio = c?.modo && c.modo !== "geral" && MODOS[c.modo] ? c.modo : null;
+    if (noturno(agora)) return proprio === "manual" ? "manual" : "auto";
+    return proprio || S.config.atendimento?.modoDia || "sugerir";
+  }
+  /**
+   * Quem o agente de follow-up deve procurar agora. Devolve [{ id, tipo: "reativar" | "posvenda", dias, ref }].
+   * Também marca como Fechado quem tem recibo e leva para Perdido quem não respondeu à reativação.
+   */
+  function campanhasDevidas(agora = new Date()) {
+    const f = S.config.followup;
+    const corte = S.config.atendimento?.ativoDesde || "";
+    const dReat = Number(f.reativarDias) || 3, dPos = Number(f.posVendaDias) || 7;
+    const lista = [];
+    for (const c of S.contatos) {
+      if (c.teste || !S.conv[c.id] || c.fu?.pausado || ["fornecedor", "pessoal"].includes(c.categoria)) continue;
+      const msgs = mensagensReais(c.id);
+      const ult = msgs.at(-1);
+      if (!ult || ult.historico) continue;
+      const compra = dataDaCompra(c);
+      if (compra) {
+        if (compra.recibo && !["fechado", "posvenda"].includes(c.estagio) && (!corte || compra.em >= corte)) {
+          mudarEstagio(c, "fechado", "auto"); c.fechadoEm = compra.em; c.temperatura = "quente";
+          evento(c.id, `🧾 Recibo/proposta aceita na conversa: venda fechada.`);
+        }
+        const dias = (agora - new Date(compra.em)) / 864e5;
+        const quieto = agora - new Date(ult.em) > 864e5;
+        if (!c.posVendaEm && dias >= dPos && dias < dPos + 5 && (!corte || compra.em >= corte) && quieto && modoSemRegra(c, agora) !== "manual") lista.push({ id: c.id, tipo: "posvenda", dias: Math.floor(dias), ref: compra.em });
+        continue;
+      }
+      if (["fechado", "posvenda", "perdido"].includes(c.estagio)) continue;
+      const prop = propostaSemResposta(c);
+      if (!prop || prop.historico || (corte && prop.em < corte)) continue;
+      const dias = (agora - new Date(prop.em)) / 864e5;
+      if (c.reativadoProposta === prop.id) {
+        // já reativou esta proposta e o cliente não respondeu: depois de alguns dias, Perdido
+        const perder = Number(f.perdidoApos) || 0;
+        if (perder > 0 && c.reativadoEm && agora - new Date(c.reativadoEm) > perder * 864e5) {
+          mudarEstagio(c, "perdido", "auto"); c.perdidoPorFollowup = true; c.temperatura = "frio";
+          evento(c.id, "❄️ Não respondeu à reativação: movido para Perdido.");
+        }
+        continue;
+      }
+      if (dias >= dReat && dias < 30 && modoEfetivo(c, agora) !== "manual") lista.push({ id: c.id, tipo: "reativar", dias: Math.floor(dias), ref: prop.id });
+    }
+    salvar("contatos");
+    return lista;
+  }
+  /** Deixa a ordem para a IA e marca o cliente (uma reativação por proposta, um pós-venda). Devolve como desfazer. */
+  function prepararCampanha(item) {
+    const c = contato(item.id);
+    const conv = conversa(item.id);
+    const antes = { reativadoProposta: c.reativadoProposta, reativadoEm: c.reativadoEm, posVendaEm: c.posVendaEm };
+    const nota = item.tipo === "posvenda"
+      ? `PÓS-VENDA (agente de follow-up): o cliente comprou há ${item.dias} dias${c.interesse ? ` (${c.interesse})` : ""}. Mande UMA mensagem curta e calorosa perguntando como está o uso do aparelho e se ele precisa de algo (película, capinha, carregador, ajuda para configurar). Interesse de verdade na pessoa, nada de venda forçada. Se ele precisar de algo, ajude.`
+      : `REATIVAÇÃO (agente de follow-up): o cliente recebeu a proposta há ${item.dias} dias e não respondeu. Escreva UMA mensagem curta e leve retomando a conversa, com um motivo para ele responder (a condição no Pix ainda vale, posso separar o teu, uma dúvida que ficou aberta), sem pressão e sem repetir a proposta inteira. Orientação do dono para follow-ups: ${S.config.followup.instrucoes || "-"}`;
+    if (item.tipo === "posvenda") c.posVendaEm = agoraISO();
+    else { c.reativadoProposta = item.ref; c.reativadoEm = agoraISO(); }
+    conv.notas.push(nota);
+    evento(c.id, item.tipo === "posvenda" ? `💬 Pós-venda: ${item.dias} dias depois da compra` : `⏰ Reativação: ${item.dias} dias sem resposta depois da proposta`);
+    salvar("contatos", `conv:${item.id}`);
+    return {
+      desfazer() {
+        Object.assign(c, antes);
+        const i = conv.notas.indexOf(nota);
+        if (i >= 0) conv.notas.splice(i, 1);
+        salvar("contatos", `conv:${item.id}`);
+      },
+    };
+  }
+
   // ---------------------------------------------------------------- etiquetas de contexto
   const PROMPT_ETIQUETAS = () => `Você classifica conversas de WhatsApp da ${S.config.marca.nome}${S.config.marca.complemento ? ` ${S.config.marca.complemento}` : ""}, uma loja que vende iPhones e celulares (novos e seminovos), acessórios, e faz assistência técnica. Para cada conversa, escolha UMA categoria pelo contexto:
 - compra: a pessoa quer comprar um aparelho ou acessório da loja (pergunta preço, modelo, estoque, forma de pagamento).
@@ -1783,6 +1878,6 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
+    noturno, modoEfetivo, modoSemRegra, campanhasDevidas, prepararCampanha, dataDaCompra, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
   };
 }

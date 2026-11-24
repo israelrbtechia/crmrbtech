@@ -42,8 +42,16 @@
   ],
   "crons": [
     {
-      "path": "/api/rotina",
+      "path": "/api/rotina?rodada=manha",
       "schedule": "7 13 * * *"
+    },
+    {
+      "path": "/api/rotina?rodada=tarde",
+      "schedule": "7 17 * * *"
+    },
+    {
+      "path": "/api/rotina?rodada=noite",
+      "schedule": "7 21 * * *"
     }
   ]
 }
