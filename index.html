@@ -373,10 +373,10 @@ async function carregarTudo() {
   }
   S.config = mesclar(CONFIG_PADRAO, S.config);
   S.estilo = mesclar(ESTILO_PADRAO, S.estilo);
-  if ((S.config.ia.regrasVersao || 1) < 2) {
+  if ((S.config.ia.regrasVersao || 1) < 3) {
     S.config.ia.instrucoes = atualizarRegras(S.config.ia.instrucoes);
     S.config.loja.pagamento = String(S.config.loja.pagamento || "").replace(/\s*Não fazemos boleto\.?\s*$/i, "");
-    S.config.ia.regrasVersao = 2;
+    S.config.ia.regrasVersao = 3;
     await kvSet("config", S.config);
   }
   if (!S.config.atendimento.migrouModo) {
@@ -1368,7 +1368,7 @@ function cartaoFunil(c, e) {
   const recente = c.iaAtualizouEm && Date.now() - new Date(c.iaAtualizouEm) < 20000;
   const podeFU = ["devido", "agendado", "esgotado"].includes(e.situacao) || (e.situacao === "nenhum" && e.dias !== undefined && c.estagio !== "fechado");
   return `<div class="card-cli ${recente ? "pulso" : ""} ${c.temperatura ? `t-${c.temperatura}` : ""}" draggable="true" data-arrastar="${c.id}" data-a="ficha" data-id="${c.id}">
-    <div class="linha" style="flex-wrap:nowrap;gap:6px"><b class="espaco" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomeCli(c))}</b>${c.temperatura ? `<span title="${esc(TEMPERATURAS[c.temperatura])}">${TEMPERATURAS[c.temperatura].split(" ")[0]}</span>` : ""}</div>
+    <div class="linha" style="flex-wrap:nowrap;gap:6px"><b class="espaco" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomeCli(c))}</b>${c.origemLead === "anuncio" ? `<span title="Veio de anúncio${c.anuncio?.titulo ? `: ${esc(c.anuncio.titulo)}` : ""}">📣</span>` : ""}${c.temperatura ? `<span title="${esc(TEMPERATURAS[c.temperatura])}">${TEMPERATURAS[c.temperatura].split(" ")[0]}</span>` : ""}</div>
     ${c.valor ? `<div class="valor">${brl(c.valor)}</div>` : ""}
     <small>${esc(c.interesse || "sem interesse anotado")}</small>
     ${c.resumo ? `<p class="resumo">${esc(c.resumo)}</p>` : ""}
@@ -1641,6 +1641,17 @@ TELAS.config = () => {
     <p class="aviso info" style="margin-top:0">Agora: <b>modo simulador</b>. Em Conversas você faz o papel do cliente, e as aprovações chegam no "WhatsApp do dono" simulado.</p>
     <p class="peq suave">Para a IA atender o seu WhatsApp de verdade pela <b>Z-API</b>, cadastre na Vercel: <b>ZAPI_INSTANCIA</b> (o "ID do canal"), <b>ZAPI_SECRET</b> (a Secret Key do Omni, menu Segurança) e <b>ZAPI_WEBHOOK_SEGREDO</b> (uma senha que você inventa), e faça Redeploy. Depois volte aqui e toque em "Ligar mensagens no CRM". Na Z-API clássica, use <b>ZAPI_TOKEN</b> no lugar da ZAPI_SECRET e cadastre <b>${esc(location.origin)}/api/whatsapp?chave=SUA_SENHA</b> em "Ao receber" e em "Enviadas por mim".</p>`}</div>
 
+  <h2>Leads de anúncio</h2>
+  <div class="cartao">
+    <p class="suave peq" style="margin-top:0">Quem clica no anúncio chega com uma mensagem pronta ("Qual iPhone mais barato?"). O CRM reconhece essas mensagens (e os dados do anúncio, quando o WhatsApp manda), marca o cartão com 📣 e a IA qualifica o cliente em vez de responder ao pé da letra.</p>
+    <div class="form">
+      <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="c-anuncio-ativo" ${S.config.anuncio.ativo ? "checked" : ""}> <b>Identificar e qualificar leads de anúncio</b></label>
+      <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="c-anuncio-semMenu" ${S.config.anuncio.semMenu ? "checked" : ""}> Para lead de anúncio, a IA qualifica direto (sem mandar o menu de boas-vindas)</label>
+      <label class="campo largo"><span>Mensagens prontas dos seus anúncios <small>(uma por linha)</small></span><textarea id="c-anuncio-frases" rows="8">${esc(S.config.anuncio.frases)}</textarea></label>
+      <label class="campo largo"><span>Como a IA deve qualificar quem vem de anúncio</span><textarea id="c-anuncio-instrucoes" rows="6">${esc(S.config.anuncio.instrucoes)}</textarea></label>
+    </div>
+  </div>
+
   <h2>Saudação com menu</h2>
   <div class="cartao">
     <p class="suave peq" style="margin-top:0">Vai sozinha, na hora, na primeira mensagem do cliente e quando ele volta a falar depois de alguns dias sem conversa. Se ele mandou só "oi", a IA espera ele escolher a opção; se já mandou uma pergunta, a IA responde logo depois do menu.</p>
@@ -1744,6 +1755,7 @@ ACOES["novo-contato"] = () => {
 
 function clienteEnvia(contatoId, texto, extra = {}) {
   const c = contato(contatoId);
+  N.detectarAnuncio(contatoId, texto);
   const saudar = N.precisaSaudacao(contatoId);
   adicionarMensagem(contatoId, "cliente", texto, extra);
   if (saudar) {
