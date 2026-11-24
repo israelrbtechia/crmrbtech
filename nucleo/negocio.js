@@ -73,6 +73,11 @@ export const TIPOS = {
   reparo: "Reparo / deixar aparelho", visita: "Visita à loja", outro: "Outro",
 };
 export const MODOS = { geral: "🌐 Seguir o modo geral", auto: "🤖 IA responde sozinha", sugerir: "✍️ IA sugere, eu envio", manual: "🙋 Só eu respondo" };
+/** Etiqueta de contexto de cada conversa (a IA classifica; o dono pode trocar). */
+export const CATEGORIAS = {
+  compra: "🛒 Compra", troca: "🔄 Troca/usado", assistencia: "🔧 Assistência", posvenda: "🛡️ Pós-venda",
+  fornecedor: "📦 Fornecedor", pessoal: "👤 Pessoal", outro: "❔ Outro",
+};
 /** Com quem a IA fala sozinha (o resto fica com o dono, a não ser que ele libere o cliente). */
 export const QUEM_ATENDE = { anuncio: "Só clientes novos que chegam de anúncio", novos: "Todos os clientes novos", todos: "Todos os clientes (inclusive antigos)" };
 export const MODOS_GERAIS = { auto: "🤖 IA responde sozinha", sugerir: "✍️ IA sugere, eu aprovo", manual: "🙋 Eu respondo" };
@@ -1210,6 +1215,67 @@ Escreva tudo em português do Brasil.`;
     return `🔍 *Inspeção de vendas*: nota ${insp.nota}/10\n\n${insp.resumo}\n\n${insp.melhorias.length ? `*Melhorias sugeridas:*\n${insp.melhorias.map((m, i) => `${i + 1}. ${m.titulo} (${m.prioridade})`).join("\n")}\n\nPara aplicar, abra o CRM em Cérebro da IA > Inspetor de vendas.` : "Nenhuma melhoria nova desta vez. 👍"}`;
   }
 
+  // ---------------------------------------------------------------- etiquetas de contexto
+  const PROMPT_ETIQUETAS = () => `Você classifica conversas de WhatsApp da ${S.config.marca.nome}${S.config.marca.complemento ? ` ${S.config.marca.complemento}` : ""}, uma loja que vende iPhones e celulares (novos e seminovos), acessórios, e faz assistência técnica. Para cada conversa, escolha UMA categoria pelo contexto:
+- compra: a pessoa quer comprar um aparelho ou acessório da loja (pergunta preço, modelo, estoque, forma de pagamento).
+- troca: a pessoa quer vender o PRÓPRIO aparelho usado para a loja ou dar na troca (aparelho de entrada).
+- assistencia: conserto, reparo, orçamento, troca de tela, bateria, defeito.
+- posvenda: já comprou e fala de entrega, garantia, defeito do que comprou, nota.
+- fornecedor: oferece algo PARA a loja comprar ou contratar: aparelhos em lote ou para revenda, peças, telas, acessórios no atacado, distribuidora, importação, serviços (marketing, anúncios, sistema, maquininha, contabilidade), parcerias. Quem quer vender o próprio aparelho usado NÃO é fornecedor (é troca).
+- pessoal: amigos, família, assuntos que não são da loja.
+- outro: não dá para saber ou não se encaixa.
+Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15", "tela", "lote", "pix"). Em "motivo", uma frase curta.`;
+  const SCHEMA_ETIQUETAS = {
+    type: "object", additionalProperties: false, required: ["itens"],
+    properties: { itens: { type: "array", items: { type: "object", additionalProperties: false, required: ["id", "categoria", "tags", "motivo"], properties: { id: { type: "string" }, categoria: { type: "string", enum: Object.keys(CATEGORIAS) }, tags: { type: "array", items: { type: "string" } }, motivo: { type: "string" } } } } },
+  };
+  const mensagensReais = (id) => (S.conv[id]?.mensagens || []).filter((m) => m.de !== "evento");
+  /** Precisa de etiqueta? Sem etiqueta, ou com bastante conversa nova desde a última (o dono que escolheu à mão não é trocado). */
+  function precisaEtiqueta(c) {
+    if (!c || c.teste || c.categoriaManual) return false;
+    const msgs = mensagensReais(c.id);
+    if (!msgs.some((m) => m.de === "cliente")) return false;
+    return !c.categoria || msgs.length - (c.categoriaMsgs || 0) >= 8;
+  }
+  /** Classifica as conversas (até 12 por chamada) e grava a etiqueta no cartão. Devolve quantas. */
+  async function etiquetarContatos(ids) {
+    const lista = ids.map(contato).filter((c) => c && mensagensReais(c.id).length);
+    let feitos = 0;
+    for (let i = 0; i < lista.length; i += 12) {
+      const lote = lista.slice(i, i + 12);
+      const texto = lote.map((c) => `## id ${c.id} · ${nomeCli(c)}\n${mensagensReais(c.id).slice(-15).map((m) => `${{ cliente: "PESSOA", ia: "LOJA (IA)", dono: "LOJA (dono)" }[m.de] || m.de}: ${cortar(m.texto || "", 300)}`).join("\n")}`).join("\n\n");
+      const r = await chamar({ system: PROMPT_ETIQUETAS(), messages: [{ role: "user", content: texto }], output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA_ETIQUETAS } } });
+      if (r.stop_reason !== "end_turn") continue;
+      let dados;
+      try { dados = JSON.parse(r.content.filter((b) => b.type === "text").map((b) => b.text).join("")); } catch { continue; }
+      for (const it of dados.itens || []) {
+        const c = lote.find((x) => x.id === it.id);
+        if (!c || !CATEGORIAS[it.categoria] || c.categoriaManual) continue;
+        const antes = c.categoria;
+        c.categoria = it.categoria;
+        c.categoriaTags = (it.tags || []).map((t) => cortar(String(t).toLowerCase(), 24)).slice(0, 3);
+        c.categoriaMotivo = cortar(it.motivo || "", 160);
+        c.categoriaMsgs = mensagensReais(c.id).length;
+        c.categoriaEm = agoraISO();
+        if (antes !== c.categoria) evento(c.id, `🏷️ Etiqueta: ${CATEGORIAS[c.categoria]}${c.categoriaMotivo ? ` (${c.categoriaMotivo})` : ""}`);
+        feitos++;
+      }
+      salvar("contatos");
+    }
+    return feitos;
+  }
+  /** O dono trocou a etiqueta à mão: vale a dele (a IA não troca mais). */
+  function definirCategoria(contatoId, categoria) {
+    const c = contato(contatoId);
+    if (!c || (categoria && !CATEGORIAS[categoria])) return null;
+    c.categoria = categoria || null;
+    c.categoriaManual = Boolean(categoria);
+    c.categoriaEm = agoraISO();
+    evento(c.id, categoria ? `🏷️ Você marcou como ${CATEGORIAS[categoria]}` : "🏷️ Etiqueta liberada para a IA classificar");
+    salvar("contatos");
+    return c;
+  }
+
   // ---------------------------------------------------------------- lead de anúncio
   /**
    * Chame ANTES de registrar a mensagem nova do cliente. Marca o cartão como lead de anúncio
@@ -1272,6 +1338,7 @@ Escreva tudo em português do Brasil.`;
   function iaPodeAtender(c) {
     if (!c || c.teste || c.iaLiberada) return true;
     if (c.modo && c.modo !== "geral" && MODOS[c.modo]) return c.modo !== "manual"; // o dono escolheu nesta conversa
+    if (c.categoria === "fornecedor" || c.categoria === "pessoal") return false; // não é cliente: só o dono
     const regra = S.config.atendimento?.quemAtende || "anuncio";
     if (regra === "todos") return true;
     const corte = S.config.atendimento?.ativoDesde;
@@ -1480,7 +1547,7 @@ Escreva tudo em português do Brasil.`;
     const ativos = S.contatos.filter((c) => !c.teste).sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm))).slice(0, 30).map((c) => {
       const ult = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1);
       const quem = ult ? { cliente: "cliente", ia: "IA", dono: "você" }[ult.de] || ult.de : "";
-      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}${iaPodeAtender(c) ? "" : " | IA bloqueada (fora da regra)"}${vendasDe(c.id)}`;
+      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}${c.categoria ? ` | ${CATEGORIAS[c.categoria]}` : ""}${iaPodeAtender(c) ? "" : " | IA bloqueada (fora da regra)"}${vendasDe(c.id)}`;
     });
     const fim = new Date(agora.getTime() + 7 * 864e5);
     const comps = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= new Date(agora.getTime() - 864e5) && deLocal(x.inicio) <= fim).map((x) => `${x.id} | ${dataHora(deLocal(x.inicio).toISOString())} | ${TIPOS[x.tipo]} | ${nomeCli(contato(x.contatoId))} (${x.contatoId})`);
@@ -1716,6 +1783,6 @@ Escreva tudo em português do Brasil.`;
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, iaPodeAtender, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
+    noturno, modoEfetivo, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
   };
 }

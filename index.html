@@ -292,7 +292,7 @@ import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.7.0/+esm
 import {
   FUSO, uid, agoraISO, soDigitos, brl, semComentarios, MARCA_AUDIO, partesDoTexto, mesmoNumero,
   dataLocalISO, horaLocal, deLocal, paraLocal, hora, dataCurta, dataHora,
-  ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, QUEM_ATENDE, CONDICOES, INSTRUCOES_EXEMPLO,
+  ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, QUEM_ATENDE, CATEGORIAS, CONDICOES, INSTRUCOES_EXEMPLO,
   FONTE_SITE_PADRAO, FOTOS_MODELO_SITE, REGRAS_SITE, TROCAS_REGRAS, atualizarRegras,
   CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig, semTagsDeVoz, telefoneCompleto,
 } from "./nucleo/negocio.js";
@@ -1314,16 +1314,20 @@ TELAS.painel = () => {
 
 // ---------------------------------------------------------------- Conversas
 let buscaConv = "";
+let filtroCategoria = "";
+const chipCategoria = (c) => (c.categoria && CATEGORIAS[c.categoria] ? `<span class="etq ${c.categoria === "fornecedor" ? "am" : c.categoria === "pessoal" ? "" : "az"}" title="${esc(c.categoriaMotivo || "")}${c.categoriaManual ? " (marcado por você)" : ""}">${CATEGORIAS[c.categoria]}</span>` : "");
 let enviarComo = "cliente";
 TELAS.conversas = () => {
   const lista = [...S.contatos]
-    .filter((c) => !buscaConv || `${c.nome} ${c.telefone} ${c.interesse}`.toLowerCase().includes(buscaConv.toLowerCase()))
+    .filter((c) => !buscaConv || `${c.nome} ${c.telefone} ${c.interesse} ${c.categoria ? CATEGORIAS[c.categoria] : ""} ${(c.categoriaTags || []).join(" ")}`.toLowerCase().includes(buscaConv.toLowerCase()))
+    .filter((c) => !filtroCategoria || (filtroCategoria === "sem" ? !c.categoria : c.categoria === filtroCategoria))
     .sort((a, b) => (b.atualizadoEm || "").localeCompare(a.atualizadoEm || ""));
   const c = rota.id ? contato(rota.id) : null;
   return `<div class="conversas ${c ? "aberta" : ""}">
     <section class="conv-lista">
       <header><div class="suave peq">Agora: ${esc(MODOS_GERAIS[modoEfetivo(null)])}${noturno() ? " · noite" : ""} · <a href="/modo">trocar</a></div><div class="linha"><h3 style="margin:0">Conversas</h3><span class="espaco"></span><button class="btn pq prim" data-a="cliente-teste">+ Cliente de teste</button></div>
-      <input type="search" id="busca-conv" data-manter placeholder="Buscar nome, número, interesse" value="${esc(buscaConv)}"></header>
+      <input type="search" id="busca-conv" data-manter placeholder="Buscar nome, número, interesse, etiqueta" value="${esc(buscaConv)}">
+      <div class="linha" style="margin-top:6px"><select data-a="filtro-categoria" style="flex:1"><option value="">🏷️ Todas as etiquetas</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${filtroCategoria === k ? "selected" : ""}>${v} (${S.contatos.filter((x) => x.categoria === k).length})</option>`).join("")}<option value="sem" ${filtroCategoria === "sem" ? "selected" : ""}>Sem etiqueta (${S.contatos.filter((x) => !x.categoria).length})</option></select><button class="btn pq" data-a="etiquetar" title="A IA etiqueta as conversas que ainda não têm etiqueta">🏷️ Etiquetar</button></div></header>
       <div class="conv-itens">${lista.length ? lista.map((x) => {
         const cv = S.conv[x.id];
         const ult = [...(cv?.mensagens || [])].reverse().find((m) => m.de !== "evento");
@@ -1332,7 +1336,7 @@ TELAS.conversas = () => {
           <div class="avatar">${esc(iniciais(x.nome))}</div>
           <div class="meio"><div class="nome"><span>${esc(nomeCli(x))}</span><small>${ult ? hora(ult.em) : ""}</small></div>
           <div class="prev">${ult ? `${ult.de === "cliente" ? "" : ult.de === "ia" ? "🤖 " : "Você: "}${esc(ult.texto)}` : "<i>sem mensagens</i>"}</div>
-          <div class="tags"><span class="etq">${esc(NOME_ESTAGIO[x.estagio])}</span>${x.naoLidas ? `<span class="etq vm">${x.naoLidas} nova(s)</span>` : ""}${cv?.rascunho ? `<span class="etq az">sugestão</span>` : ""}${pend ? `<span class="etq am">aprovação</span>` : ""}${x.precisaDono ? `<span class="etq vm">precisa de você</span>` : ""}${rodando.has(x.id) ? `<span class="etq vd">IA escrevendo</span>` : ""}</div></div></div>`;
+          <div class="tags">${chipCategoria(x)}<span class="etq">${esc(NOME_ESTAGIO[x.estagio])}</span>${x.naoLidas ? `<span class="etq vm">${x.naoLidas} nova(s)</span>` : ""}${cv?.rascunho ? `<span class="etq az">sugestão</span>` : ""}${pend ? `<span class="etq am">aprovação</span>` : ""}${x.precisaDono ? `<span class="etq vm">precisa de você</span>` : ""}${rodando.has(x.id) ? `<span class="etq vd">IA escrevendo</span>` : ""}</div></div></div>`;
       }).join("") : `<div class="vazio">Nenhuma conversa ainda.<br>Crie um <b>cliente de teste</b> e mande mensagens como se fosse ele.</div>`}</div>
     </section>
     <section class="chat">${c ? telaChat(c) : `<div class="vazio" style="margin:auto">Escolha uma conversa.</div>`}</section>
@@ -1353,6 +1357,7 @@ function telaChat(c) {
     <button class="btn pq voltar" data-a="ir" data-v="conversas">←</button>
     <div class="avatar">${esc(iniciais(c.nome))}</div>
     <div class="quem"><b>${esc(nomeCli(c))}</b><span class="suave peq">${c.telefone ? `+${esc(c.telefone)}` : "sem número"}${c.interesse ? ` · ${esc(c.interesse)}` : ""}</span></div>
+    <select data-a="mudar-categoria" data-id="${c.id}" title="Etiqueta da conversa${c.categoriaMotivo ? `: ${esc(c.categoriaMotivo)}` : ""}"><option value="">🏷️ ${c.categoria && !c.categoriaManual ? `${CATEGORIAS[c.categoria]} (IA)` : "Etiqueta: a IA escolhe"}</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${c.categoriaManual && c.categoria === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     <select data-a="mudar-modo" data-id="${c.id}" title="Quem responde nesta conversa (agora: ${esc(MODOS_GERAIS[modoEfetivo(c)])})">${Object.entries(MODOS).map(([k, v]) => `<option value="${k}" ${c.modo === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     ${!c.teste && (c.iaLiberada || !N.iaPodeAtender(c)) ? `<button class="btn pq ${c.iaLiberada ? "" : "ok"}" data-a="liberar-ia" data-id="${c.id}" title="${c.iaLiberada ? "A IA está liberada para este cliente" : "Cliente fora da regra da IA (antigo ou não veio de anúncio): só você responde"}">${c.iaLiberada ? "🔒 Bloquear IA" : "🔓 Liberar IA"}</button>` : ""}
     <select data-a="mudar-estagio" data-id="${c.id}" title="Fase">${ESTAGIOS.map(([k, v]) => `<option value="${k}" ${c.estagio === k ? "selected" : ""}>${v}</option>`).join("")}</select>
@@ -1399,7 +1404,7 @@ function cartaoFunil(c, e) {
   return `<div class="card-cli ${recente ? "pulso" : ""} ${c.temperatura ? `t-${c.temperatura}` : ""}" draggable="true" data-arrastar="${c.id}" data-a="ficha" data-id="${c.id}">
     <div class="linha" style="flex-wrap:nowrap;gap:6px"><b class="espaco" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nomeCli(c))}</b>${c.origemLead === "anuncio" ? `<span title="Veio de anúncio${c.anuncio?.titulo ? `: ${esc(c.anuncio.titulo)}` : ""}">📣</span>` : ""}${c.temperatura ? `<span title="${esc(TEMPERATURAS[c.temperatura])}">${TEMPERATURAS[c.temperatura].split(" ")[0]}</span>` : ""}</div>
     ${c.valor ? `<div class="valor">${brl(c.valor)}</div>` : ""}
-    <small>${esc(c.interesse || "sem interesse anotado")}</small>
+    ${c.categoria ? `<div class="tags" style="margin:2px 0">${chipCategoria(c)}</div>` : ""}<small>${esc(c.interesse || "sem interesse anotado")}</small>
     ${c.resumo ? `<p class="resumo">${esc(c.resumo)}</p>` : ""}
     ${c.proximoPasso ? `<small>➡️ ${esc(c.proximoPasso)}</small>` : ""}
     <div class="rodape-card">${rodapeFollowup(c, e)}${e.dias !== undefined && e.situacao !== "cliente-esperando" ? `<span class="etq">💤 ${tempoPassado(e.dias)} sem resposta</span>` : ""}</div>
@@ -2076,6 +2081,24 @@ ACOES["aprovar-valor"] = (el) => {
   responderAprovacao(el.dataset.id, "aprovada", v, comentario(el.dataset.id));
 };
 ACOES.recusar = (el) => responderAprovacao(el.dataset.id, "recusada", null, comentario(el.dataset.id));
+ACOES["filtro-categoria"] = (el) => { filtroCategoria = el.value; render(); };
+ACOES["mudar-categoria"] = (el) => { N.definirCategoria(el.dataset.id, el.value); render(); };
+ACOES.etiquetar = async (el) => {
+  const ids = S.contatos.filter((c) => N.precisaEtiqueta(c)).map((c) => c.id);
+  if (!ids.length) return toast("Todas as conversas já têm etiqueta. 👍", "ok");
+  el.disabled = true;
+  let feitas = 0;
+  try {
+    for (let i = 0; i < ids.length; i += 24) {
+      el.textContent = `🏷️ ${Math.min(i + 24, ids.length)}/${ids.length}…`;
+      feitas += await N.etiquetarContatos(ids.slice(i, i + 24));
+      render();
+    }
+    toast(`${feitas} conversa(s) etiquetada(s).`, "ok");
+  } catch (e) { toast(e.message, "erro"); }
+  el.disabled = false;
+  render();
+};
 ACOES["liberar-ia"] = (el) => {
   const c = contato(el.dataset.id);
   if (!c) return;
