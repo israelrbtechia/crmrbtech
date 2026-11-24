@@ -50,3 +50,6 @@ drop trigger if exists crm_dados_carimbo on public.crm_dados;
 create trigger crm_dados_carimbo
   before insert or update on public.crm_dados
   for each row execute function public.crm_dados_carimbo();
+
+-- Faz a API do Supabase enxergar a tabela nova na hora.
+notify pgrst, 'reload schema';
