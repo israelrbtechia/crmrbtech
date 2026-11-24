@@ -1635,9 +1635,11 @@ TELAS.config = () => {
   <h2>WhatsApp</h2>
   <div class="cartao">${SERVIDOR.zap ? `
     <p class="aviso info" style="margin-top:0">✓ <b>WhatsApp conectado pela Z-API.</b> O servidor atende 24 horas, mesmo com o CRM fechado: das ${esc(S.config.atendimento.noiteInicio)} às ${esc(S.config.atendimento.noiteFim)} a IA responde sozinha; de dia vale o botão em <a href="/modo">/modo</a>. Pedidos de aprovação vão para o seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : " (cadastre o seu número em Dono)"}: responda <b>sim</b>, <b>não</b> ou <b>sim 3799</b>.</p>
-    <p class="suave peq">Endereço que fica cadastrado na Z-API (em "Ao receber" e em "Enviadas por mim"): <b>${esc(location.origin)}/api/whatsapp?chave=</b> + o valor da variável ZAPI_WEBHOOK_SEGREDO. Quando você responde um cliente pelo celular, a IA fica quieta naquela conversa por ${esc(S.config.atendimento.pausaAoAssumirHoras)} h e aprende com a sua resposta.</p>` : `
+    ${SERVIDOR.zapOmni ? `<div class="linha"><button class="btn prim" data-a="ligar-zap">🔗 Ligar mensagens no CRM</button><button class="btn" data-a="estado-zap">Conferir conexão</button><span class="suave peq" id="estado-zap"></span></div>
+    <p class="suave peq">Omni Z-API: o botão cadastra no Omni o endereço deste CRM para receber as mensagens. Toque de novo se trocar a ZAPI_WEBHOOK_SEGREDO.</p>` : `<p class="suave peq">Endereço que fica cadastrado na Z-API (em "Ao receber" e em "Enviadas por mim"): <b>${esc(location.origin)}/api/whatsapp?chave=</b> + o valor da variável ZAPI_WEBHOOK_SEGREDO.</p>`}
+    <p class="suave peq">Você manda ordens para a IA pelo WhatsApp, em texto ou áudio, do seu número pessoal para o número da loja (ex.: "manda mensagem pro João dizendo que o 15 Pro chegou", "o 13 de 128 agora é 2.599", "muda para eu respondo"). Quando você responde um cliente pelo celular, a IA fica quieta naquela conversa por ${esc(S.config.atendimento.pausaAoAssumirHoras)} h e aprende com a sua resposta.</p>` : `
     <p class="aviso info" style="margin-top:0">Agora: <b>modo simulador</b>. Em Conversas você faz o papel do cliente, e as aprovações chegam no "WhatsApp do dono" simulado.</p>
-    <p class="peq suave">Para a IA atender o seu WhatsApp de verdade pela <b>Z-API</b>, cadastre na Vercel: <b>ZAPI_INSTANCIA</b>, <b>ZAPI_TOKEN</b>, <b>ZAPI_CLIENT_TOKEN</b> (se ativou o token de segurança na Z-API) e <b>ZAPI_WEBHOOK_SEGREDO</b> (uma senha que você inventa). Depois, na Z-API, cadastre o endereço <b>${esc(location.origin)}/api/whatsapp?chave=SUA_SENHA</b> em "Ao receber" e em "Enviadas por mim", e faça Redeploy na Vercel.</p>`}</div>
+    <p class="peq suave">Para a IA atender o seu WhatsApp de verdade pela <b>Z-API</b>, cadastre na Vercel: <b>ZAPI_INSTANCIA</b> (o "ID do canal"), <b>ZAPI_SECRET</b> (a Secret Key do Omni, menu Segurança) e <b>ZAPI_WEBHOOK_SEGREDO</b> (uma senha que você inventa), e faça Redeploy. Depois volte aqui e toque em "Ligar mensagens no CRM". Na Z-API clássica, use <b>ZAPI_TOKEN</b> no lugar da ZAPI_SECRET e cadastre <b>${esc(location.origin)}/api/whatsapp?chave=SUA_SENHA</b> em "Ao receber" e em "Enviadas por mim".</p>`}</div>
 
   <div class="linha" style="margin-top:18px"><button class="btn prim" data-a="salvar-config">Salvar configurações</button></div>
 
@@ -2185,6 +2187,32 @@ ACOES["importar-site"] = async (el) => {
   } catch (e) { toast(e.message, "erro"); }
   el.disabled = false; el.textContent = texto;
   render();
+};
+async function chamarZap(metodo) {
+  const r = await fetch("/api/zap", { method: metodo, headers: { "x-crm-sessao": await tokenSessao() } });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.erro || `Erro ${r.status}`);
+  return d;
+}
+const mostrarEstadoZap = (d) => {
+  const el = $("#estado-zap");
+  if (!el) return;
+  const partes = [d.zap && `WhatsApp: ${d.zap.ok ? "✓" : "⚠️"} ${d.zap.detalhe}`, d.webhook && `Mensagens no CRM: ${d.webhook.ok ? "✓" : "⚠️"} ${d.webhook.detalhe}`].filter(Boolean);
+  el.textContent = partes.join(" · ");
+};
+ACOES["ligar-zap"] = async (el) => {
+  el.disabled = true;
+  try {
+    await chamarZap("POST");
+    toast("Pronto: as mensagens do WhatsApp agora chegam no CRM.", "ok");
+    mostrarEstadoZap(await chamarZap("GET"));
+  } catch (e) { toast(e.message, "erro"); }
+  el.disabled = false;
+};
+ACOES["estado-zap"] = async (el) => {
+  el.disabled = true;
+  try { mostrarEstadoZap(await chamarZap("GET")); } catch (e) { toast(e.message, "erro"); }
+  el.disabled = false;
 };
 ACOES["ver-site"] = () => abrirModal("O que a IA sabe do site", `<p class="suave peq">Isto vai junto com o catálogo em toda conversa. Para mudar, edite no admin do site.</p><pre class="prompt">${esc(secaoSite().trim())}</pre>`, [{ texto: "Fechar", acao: fecharModal }]);
 

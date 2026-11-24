@@ -67,8 +67,9 @@ Logos em [`marca/`](marca/): `crmy-logo.svg` (fundo escuro), `crmy-logo-fundo-cl
 | `ELEVENLABS_API_KEY` | Chave da API da ElevenLabs, para a IA responder em áudio com a sua voz (opcional). Marque como **Sensitive**. |
 | `ELEVENLABS_VOICE_ID` | ID da voz clonada na ElevenLabs (opcional) |
 | `ELEVENLABS_MODEL` | Modelo da fala (opcional; padrão `eleven_multilingual_v2`) |
-| `ZAPI_INSTANCIA` | ID da instância na Z-API (WhatsApp de verdade) |
-| `ZAPI_TOKEN` | Token da instância na Z-API. Marque como **Sensitive**. |
+| `ZAPI_INSTANCIA` | "ID do canal" no Omni Z-API (ou ID da instância na Z-API clássica) |
+| `ZAPI_SECRET` | Omni Z-API: a Secret Key (menu Segurança). Marque como **Sensitive**. |
+| `ZAPI_TOKEN` | Token do canal/instância (no Omni é opcional: o CRM busca sozinho). Marque como **Sensitive**. |
 | `ZAPI_CLIENT_TOKEN` | Token de segurança da conta Z-API, se você ativou (opcional). Marque como **Sensitive**. |
 | `ZAPI_WEBHOOK_SEGREDO` | Uma senha que você inventa; vai no endereço cadastrado na Z-API |
 | `CRON_SECRET` | Senha da rotina diária de follow-ups da Vercel (opcional; a Vercel manda sozinha) |

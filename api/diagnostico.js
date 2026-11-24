@@ -1,11 +1,11 @@
 import { ambiente, entrarNoSupabase } from "../lib/ambiente.js";
-import { statusZap } from "../lib/zapi.js";
+import { statusZap, webhookStatus, ehOmni } from "../lib/zapi.js";
 
 /**
  * Confere a configuração da Vercel e do Supabase sem mostrar nenhuma senha ou chave:
  * só diz o que está faltando ou errado.
  */
-export async function GET() {
+export async function GET(request) {
   const env = ambiente();
   const itens = [];
   const item = (ok, nome, detalhe) => itens.push({ ok, nome, detalhe });
@@ -40,13 +40,17 @@ export async function GET() {
   if (env.ELEVENLABS_API_KEY || env.ELEVENLABS_VOICE_ID) {
     item(Boolean(env.ELEVENLABS_API_KEY && env.ELEVENLABS_VOICE_ID), "Voz (ElevenLabs)", env.ELEVENLABS_API_KEY && env.ELEVENLABS_VOICE_ID ? "cadastrada" : "falta ELEVENLABS_API_KEY ou ELEVENLABS_VOICE_ID");
   }
-  for (const n of ["ZAPI_INSTANCIA", "ZAPI_TOKEN", "ZAPI_WEBHOOK_SEGREDO"]) {
-    item(Boolean(env[n]), n, env[n] ? "cadastrada" : "falta cadastrar na Vercel (e fazer Redeploy) para o WhatsApp funcionar");
-  }
-  item(true, "ZAPI_CLIENT_TOKEN", env.ZAPI_CLIENT_TOKEN ? "cadastrada" : "não cadastrada (só precisa se o token de segurança estiver ativo na Z-API)");
-  if (env.ZAPI_INSTANCIA && env.ZAPI_TOKEN) {
+  item(Boolean(env.ZAPI_INSTANCIA), "ZAPI_INSTANCIA", env.ZAPI_INSTANCIA ? "cadastrada" : "falta cadastrar na Vercel o \"ID do canal\" do Omni (ou o ID da instância da Z-API) e fazer Redeploy");
+  if (ehOmni()) item(true, "ZAPI_SECRET", "cadastrada (Omni Z-API)");
+  else item(Boolean(env.ZAPI_TOKEN), "ZAPI_SECRET", "falta cadastrar na Vercel a Secret Key do Omni (menu Segurança) e fazer Redeploy");
+  item(Boolean(env.ZAPI_WEBHOOK_SEGREDO), "ZAPI_WEBHOOK_SEGREDO", env.ZAPI_WEBHOOK_SEGREDO ? "cadastrada" : "falta cadastrar na Vercel (uma senha que você inventa) e fazer Redeploy");
+  if (env.ZAPI_INSTANCIA && (env.ZAPI_TOKEN || env.ZAPI_SECRET)) {
     const z = await statusZap();
-    item(z.ok, "WhatsApp na Z-API", z.detalhe);
+    item(z.ok, "WhatsApp no Omni / Z-API", z.detalhe);
+    if (ehOmni() && env.ZAPI_WEBHOOK_SEGREDO) {
+      const w = await webhookStatus(new URL(request.url).origin);
+      item(w.ok, "Mensagens chegando no CRM (webhook)", w.detalhe);
+    }
   }
   return Response.json({ itens, tudoOk: itens.every((i) => i.ok) }, { headers: { "cache-control": "no-store" } });
 }

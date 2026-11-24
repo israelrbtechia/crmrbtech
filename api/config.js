@@ -23,7 +23,9 @@ export function GET() {
       // Voz clonada (ElevenLabs): só com login, como a IA.
       voz: tem("ELEVENLABS_API_KEY") && tem("ELEVENLABS_VOICE_ID") && login,
       // WhatsApp de verdade (Z-API): o servidor atende 24 h.
-      zap: tem("ZAPI_INSTANCIA") && tem("ZAPI_TOKEN") && tem("ZAPI_WEBHOOK_SEGREDO") && tem("ANTHROPIC_API_KEY") && login,
+      zap: tem("ZAPI_INSTANCIA") && (tem("ZAPI_TOKEN") || tem("ZAPI_SECRET")) && tem("ZAPI_WEBHOOK_SEGREDO") && tem("ANTHROPIC_API_KEY") && login,
+      // Omni Z-API: o CRM consegue cadastrar o webhook sozinho.
+      zapOmni: tem("ZAPI_SECRET") && login,
       faltando: NECESSARIAS.filter((n) => !tem(n)),
     },
     { headers: { "cache-control": "no-store" } },
