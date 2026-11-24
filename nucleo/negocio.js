@@ -26,9 +26,12 @@ export const JEITO_AUDIO_PADRAO = `Fale como eu falo nos meus áudios: manezinho
 export const partesDoTexto = (texto) => String(texto || "").split(/\n\s*---+\s*\n/).map((t) => t.trim()).filter(Boolean);
 /** No Brasil o WhatsApp às vezes manda o celular sem o nono dígito: serve só para comparar números. */
 export function chaveNumero(numero) {
-  const n = soDigitos(numero);
+  let n = soDigitos(numero);
+  if (n.length === 10 || n.length === 11) n = `55${n}`; // salvo sem o 55 (ex.: 48 99999-0000)
   return n.length === 13 && n.startsWith("55") && n[4] === "9" ? n.slice(0, 4) + n.slice(5) : n;
 }
+/** WhatsApp completo para enviar: salvo sem o 55 (DDD + número) ganha o 55. */
+export const telefoneCompleto = (t) => { const d = soDigitos(t); return d.length === 10 || d.length === 11 ? `55${d}` : d; };
 export const mesmoNumero = (a, b) => Boolean(soDigitos(a)) && chaveNumero(a) === chaveNumero(b);
 
 // ---------------------------------------------------------------- datas no horário de Brasília
@@ -1360,6 +1363,164 @@ Escreva tudo em português do Brasil.`;
     return { aprovacao, resposta: r.decisao === "aprovada" ? `✅ #${alvo.codigo} aprovado${r.valor ? ` por ${brl(r.valor)}` : ""}. Já vou avisar o cliente.` : `⛔ #${alvo.codigo} recusado. Vou oferecer outra opção ao cliente.` };
   }
 
+  // ---------------------------------------------------------------- assistente do dono (ordens pelo WhatsApp)
+  /** "sim", "não", "sim 3799", "A2 não": resposta curta de aprovação (sem gastar IA). */
+  const respostaCurta = (t) => /^\s*(#?A\d+\s*)?(sim|s|ok|pode|tem|n[aã]o|n|sem estoque|acabou)?[\s!.,]*((r\$\s*)?\d[\d.,]*)?[\s!.]*$/i.test(String(t || "")) && /\S/.test(String(t || ""));
+  function ferramentasDono() {
+    const obj = (props, desc = {}) => ({ type: "object", additionalProperties: false, required: Object.keys(props), properties: Object.fromEntries(Object.entries(props).map(([k, t]) => [k, typeof t === "string" ? { type: t, ...(desc[k] ? { description: desc[k] } : {}) } : t])) });
+    return [
+      { name: "responder_pedido", strict: true, description: "Responde um pedido pendente: aprovação de venda (sim, não ou sim com o valor certo) ou decisão de estoque (texto livre).", input_schema: obj({ codigo: "string", resposta: "string" }, { codigo: "Código do pedido, ex.: A3", resposta: "Para aprovação: 'sim', 'não' ou 'sim 3799'. Para decisão: o que o dono decidiu, ex.: 'encomenda 7 dias 5199'" }) },
+      { name: "mandar_para_cliente", strict: true, description: "Manda mensagem para um cliente que já está no CRM. Com instrucao, a IA vendedora escreve do jeito da loja e envia na hora. Use texto_exato só quando o dono ditou a mensagem palavra por palavra.", input_schema: obj({ contato_id: "string", instrucao: "string", texto_exato: "string" }, { contato_id: "id do cliente (da lista)", instrucao: "O que dizer ou fazer, ex.: avisar que o iPhone 15 chegou e chamar para retirar hoje", texto_exato: "Mensagem exata ditada pelo dono, ou vazio" }) },
+      { name: "novo_cliente", strict: true, description: "Cadastra um cliente novo pelo WhatsApp e já manda a primeira mensagem (a IA escreve do jeito da loja).", input_schema: obj({ nome: "string", telefone: "string", instrucao: "string" }, { telefone: "WhatsApp com DDD", instrucao: "O que a primeira mensagem deve dizer" }) },
+      { name: "mudar_modo", strict: true, description: "Muda quem responde os clientes durante o dia: auto (a IA responde sozinha), sugerir (a IA sugere e o dono aprova no CRM) ou manual (só o dono responde). À noite a IA responde sozinha se o modo noturno estiver ligado.", input_schema: obj({ modo: { type: "string", enum: Object.keys(MODOS_GERAIS) } }) },
+      { name: "atualizar_cliente", strict: true, description: "Muda o cartão de um cliente: fase do funil, temperatura, nota, e pausa ou retoma a IA naquela conversa.", input_schema: obj({ contato_id: "string", fase: { type: "string", enum: ["", ...ESTAGIOS.map((e) => e[0])] }, temperatura: { type: "string", enum: ["", ...Object.keys(TEMPERATURAS)] }, nota: "string", pausar_horas: "number" }, { pausar_horas: "Horas com a IA quieta nesta conversa; 0 = a IA volta a responder; -1 = não mexer" }) },
+      { name: "ensinar_ia", strict: true, description: "Guarda uma regra nova nas instruções da IA vendedora: preço, política, jeito de vender, produto que chegou ou acabou.", input_schema: obj({ regra: "string" }, { regra: "A regra, curta e clara, ex.: o iPhone 13 128GB seminovo agora é R$ 2.599" }) },
+      { name: "ver_conversa", strict: true, description: "Mostra as últimas mensagens de uma conversa com cliente.", input_schema: obj({ contato_id: "string" }) },
+    ];
+  }
+  function contextoDono() {
+    const agora = new Date();
+    const pend = S.aprovacoes.filter((a) => a.status === "pendente").map((a) => `#${a.codigo} (${a.tipo === "decisao" ? `decisão: ${a.situacao}` : `aprovação: ${a.valor ? brl(a.valor) : "sem preço"}`}) ${nomeCli(contato(a.contatoId))}: ${a.produto}`);
+    const ativos = S.contatos.filter((c) => !c.teste).sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm))).slice(0, 30).map((c) => {
+      const ult = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1);
+      const quem = ult ? { cliente: "cliente", ia: "IA", dono: "você" }[ult.de] || ult.de : "";
+      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${String(ult.texto || "").slice(0, 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}`;
+    });
+    const fim = new Date(agora.getTime() + 2 * 864e5);
+    const comps = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= agora && deLocal(x.inicio) <= fim).map((x) => `${dataHora(deLocal(x.inicio).toISOString())} ${TIPOS[x.tipo]} com ${nomeCli(contato(x.contatoId))}`);
+    const a = S.config.atendimento;
+    return [
+      `Agora: ${agora.toLocaleString("pt-BR", { timeZone: FUSO, weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} (Brasília).`,
+      `Quem responde os clientes agora: ${MODOS_GERAIS[modoEfetivo(null, agora)] || "-"}${noturno(agora) ? " (modo noturno)" : ""}. Modo do dia: ${MODOS_GERAIS[a.modoDia] || a.modoDia}. Modo noturno: ${a.noiteAtiva ? `das ${a.noiteInicio} às ${a.noiteFim}` : "desligado"}.`,
+      pend.length ? `Pedidos esperando o dono:\n${pend.join("\n")}` : "Nenhum pedido esperando o dono.",
+      `Clientes mais recentes (id | nome | WhatsApp | fase | temperatura | interesse | resumo | última mensagem):\n${ativos.join("\n") || "(nenhum)"}`,
+      comps.length ? `Agenda dos próximos 2 dias:\n${comps.join("\n")}` : "",
+    ].filter(Boolean).join("\n\n");
+  }
+  async function executarFerramentaDono(nome, ent, saida) {
+    const cli = (id) => { const c = contato(id); if (!c) throw new Error(`Não achei o cliente ${id}.`); return c; };
+    const ordem = (c, instrucao, primeira = false) => {
+      conversa(c.id).notas.push(`ORDEM DO DONO (pelo WhatsApp dele): ${instrucao}.${primeira ? " Este cliente ainda não falou com a loja: a primeira mensagem é sua, curta, simpática e com o nome da loja." : ""} Faça isso agora nesta conversa, do jeito da loja, sem dizer que foi o dono que pediu.`);
+      evento(c.id, `📲 Ordem do dono: ${instrucao}`);
+      if (!saida.acionar.includes(c.id)) saida.acionar.push(c.id);
+      salvar(`conv:${c.id}`);
+    };
+    switch (nome) {
+      case "responder_pedido": {
+        const cod = String(ent.codigo || "").replace("#", "").toUpperCase();
+        const a = S.aprovacoes.find((x) => x.status === "pendente" && x.codigo === cod);
+        if (!a) return { erro: `O pedido ${cod} não está pendente.` };
+        if (a.tipo === "decisao") { responderDecisao(a.id, ent.resposta); if (!saida.seguir.includes(a.contatoId)) saida.seguir.push(a.contatoId); return { ok: true, pedido: cod, decisao: ent.resposta }; }
+        const r = lerRespostaDono(ent.resposta);
+        if (!r.decisao) return { erro: "Para aprovação, a resposta precisa ser sim, não ou sim com o valor." };
+        const comentario = r.comentario.replace(/^(sim|s|ok|n[aã]o|n)\b[\s,.!-]*/i, "").replace(/(?:r\$\s*)?\d[\d.,]*/, "").trim();
+        aplicarAprovacao(a.id, r.decisao, r.valor, comentario);
+        if (!saida.seguir.includes(a.contatoId)) saida.seguir.push(a.contatoId);
+        return { ok: true, pedido: cod, decisao: r.decisao, valor: r.valor || a.valor || null };
+      }
+      case "mandar_para_cliente": {
+        const c = cli(ent.contato_id);
+        if (String(ent.texto_exato || "").trim()) { saida.enviar.push({ contatoId: c.id, texto: ent.texto_exato.trim() }); return { ok: true, vai: "texto exato", para: nomeCli(c) }; }
+        if (!String(ent.instrucao || "").trim()) return { erro: "Diga o que mandar." };
+        ordem(c, ent.instrucao.trim());
+        return { ok: true, vai: "a IA vendedora escreve e manda agora", para: nomeCli(c) };
+      }
+      case "novo_cliente": {
+        const tel = telefoneCompleto(ent.telefone);
+        if (tel.length < 12) return { erro: "Telefone inválido: mande com DDD." };
+        let c = S.contatos.find((x) => mesmoNumero(x.telefone || x.zap, tel));
+        if (!c) c = novoContato({ nome: String(ent.nome || "").trim(), telefone: tel, zap: tel, origem: "dono" });
+        ordem(c, String(ent.instrucao || "apresente a loja e pergunte como pode ajudar").trim(), !(conversa(c.id).mensagens.some((m) => m.de !== "evento")));
+        return { ok: true, cliente: nomeCli(c), id: c.id };
+      }
+      case "mudar_modo": {
+        if (!MODOS_GERAIS[ent.modo]) return { erro: "Modo inválido." };
+        S.config.atendimento.modoDia = ent.modo;
+        salvar("config");
+        registrar(`O dono mudou o modo pelo WhatsApp: ${MODOS_GERAIS[ent.modo]}.`);
+        return { ok: true, modo: MODOS_GERAIS[ent.modo], noturno: noturno() };
+      }
+      case "atualizar_cliente": {
+        const c = cli(ent.contato_id);
+        const feito = [];
+        if (ent.fase && NOME_ESTAGIO[ent.fase] && ent.fase !== c.estagio) { mudarEstagio(c, ent.fase, "voce"); feito.push(`fase ${NOME_ESTAGIO[ent.fase]}`); }
+        if (ent.temperatura && TEMPERATURAS[ent.temperatura]) { c.temperatura = ent.temperatura; feito.push(`temperatura ${ent.temperatura}`); }
+        if (String(ent.nota || "").trim()) { c.notas = `${c.notas ? `${c.notas}\n` : ""}${dataCurta(agoraISO())}: ${ent.nota.trim()}`; feito.push("nota"); }
+        const h = Number(ent.pausar_horas);
+        if (h > 0) { c.pausadoAte = new Date(Date.now() + h * 3600e3).toISOString(); feito.push(`IA pausada por ${h} h`); }
+        else if (h === 0) { c.pausadoAte = null; feito.push("IA voltou a responder"); }
+        c.atualizadoEm = agoraISO();
+        salvar("contatos");
+        return { ok: true, cliente: nomeCli(c), feito };
+      }
+      case "ensinar_ia": {
+        const regra = String(ent.regra || "").trim();
+        if (!regra) return { erro: "Regra vazia." };
+        const titulo = "# Ordens do dono pelo WhatsApp";
+        let t = S.config.ia.instrucoes || "";
+        if (!t.includes(titulo)) t = `${t.trimEnd()}\n\n${titulo}`;
+        S.config.ia.instrucoes = `${t.trimEnd()}\n- ${dataCurta(agoraISO())}: ${regra}`;
+        salvar("config");
+        registrar(`O dono ensinou pelo WhatsApp: ${regra}`);
+        return { ok: true, regra };
+      }
+      case "ver_conversa": {
+        const c = cli(ent.contato_id);
+        const msgs = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").slice(-20);
+        return { cliente: nomeCli(c), fase: NOME_ESTAGIO[c.estagio], mensagens: msgs.map((m) => `${dataHora(m.em)} ${{ cliente: "cliente", ia: "IA", dono: "você" }[m.de] || m.de}: ${String(m.texto || "").slice(0, 300)}`) };
+      }
+      default: return { erro: `Ferramenta desconhecida: ${nome}` };
+    }
+  }
+  /**
+   * O dono mandou uma mensagem (texto ou áudio transcrito) do WhatsApp dele.
+   * Resposta curta de aprovação vai direto; o resto passa pelo assistente, que executa no CRM.
+   * Devolve { resposta, seguir, acionar, enviar }: "seguir" = conversas com aprovação/decisão respondida
+   * (a IA continua no modo da conversa); "acionar" = ordens do dono (a IA escreve e manda na hora);
+   * "enviar" = textos que o dono ditou palavra por palavra.
+   */
+  async function assistenteDono(texto) {
+    const t = String(texto || "").trim();
+    const saida = { resposta: "", seguir: [], acionar: [], enviar: [] };
+    if (!t) return saida;
+    const pendentes = S.aprovacoes.filter((a) => a.status === "pendente");
+    if (pendentes.length && respostaCurta(t)) {
+      const r = donoResponde(t);
+      if (r.aprovacao) saida.seguir.push(r.aprovacao.contatoId);
+      saida.resposta = r.resposta;
+      return saida;
+    }
+    const historico = S.donoZap.slice(-12, -1).map((m) => `${m.de === "dono" ? "Dono" : "Assistente"}: ${String(m.texto || "").slice(0, 400)}`).join("\n");
+    const sistema = `Você é o assistente pessoal do dono da ${S.config.marca.nome}${S.config.marca.complemento ? ` ${S.config.marca.complemento}` : ""}, no WhatsApp dele. Ele fala com você do WhatsApp pessoal (texto ou áudio transcrito, às vezes com erros de português) e você executa as ordens no CRM com as ferramentas.
+- Para falar com um cliente, use mandar_para_cliente com uma instrução para a IA vendedora (ela escreve do jeito da loja). Use texto_exato só se ele ditou a mensagem palavra por palavra.
+- Se não der para saber qual cliente é, pergunte, mostrando 2 ou 3 opções com nome e final do telefone. Não chute.
+- Mudança de preço, produto que chegou ou acabou, política ou jeito de vender: ensinar_ia.
+- Use só o que está no contexto e nas ferramentas. Não invente cliente, preço nem conversa.
+- Responda curto, como um braço direito de confiança no WhatsApp: diga em uma ou duas linhas o que você fez, ou responda a pergunta dele. Se não deu para fazer, diga por quê. Sem markdown além de *negrito*.`;
+    const mensagens = [{ role: "user", content: [{ type: "text", text: `${contextoDono()}\n\n${historico ? `# Conversa recente com o dono\n${historico}\n\n` : ""}# Mensagem nova do dono\n${t}` }] }];
+    const tools = ferramentasDono();
+    for (let volta = 0; volta < 8; volta++) {
+      const r = await chamar({ system: sistema, tools, messages: mensagens, output_config: { effort: "low" } });
+      if (r.stop_reason === "refusal") { saida.resposta = "Não consegui fazer isso. Me explica de outro jeito?"; return saida; }
+      mensagens.push({ role: "assistant", content: r.content });
+      if (r.stop_reason === "pause_turn") continue;
+      if (r.stop_reason === "tool_use") {
+        const resultados = [];
+        for (const b of r.content.filter((x) => x.type === "tool_use")) {
+          let out;
+          try { out = await executarFerramentaDono(b.name, b.input ?? {}, saida); } catch (e) { out = { erro: e.message }; }
+          resultados.push({ type: "tool_result", tool_use_id: b.id, content: JSON.stringify(out), ...(out?.erro ? { is_error: true } : {}) });
+        }
+        mensagens.push({ role: "user", content: resultados });
+        continue;
+      }
+      saida.resposta = r.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim() || "Feito. 👍";
+      return saida;
+    }
+    saida.resposta = "Fiz o que deu, mas me perdi no meio. Confere no CRM?";
+    return saida;
+  }
+
   // ---------------------------------------------------------------- follow-up
   /** Prepara um follow-up (nota para a IA). Devolve como desfazer se a IA falhar. */
   function prepararFollowup(c, e = estadoFollowup(c)) {
@@ -1401,6 +1562,6 @@ Escreva tudo em português do Brasil.`;
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde,
+    noturno, modoEfetivo, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
   };
 }

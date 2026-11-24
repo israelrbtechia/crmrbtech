@@ -294,7 +294,7 @@ import {
   dataLocalISO, horaLocal, deLocal, paraLocal, hora, dataCurta, dataHora,
   ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, CONDICOES, INSTRUCOES_EXEMPLO,
   FONTE_SITE_PADRAO, FOTOS_MODELO_SITE, REGRAS_SITE, TROCAS_REGRAS, atualizarRegras,
-  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig, semTagsDeVoz,
+  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig, semTagsDeVoz, telefoneCompleto,
 } from "./nucleo/negocio.js";
 
 /* =====================================================================
@@ -994,10 +994,10 @@ function agendarIA(contatoId, segundos = S.config.ia.espera) {
  * Roda a IA nesta conversa (o ciclo fica no núcleo) e entrega a resposta conforme o modo:
  * IA sozinha manda; IA sugere guarda a sugestão. Contatos do WhatsApp: quem roda é o servidor.
  */
-async function rodarAgente(contatoId, { rascunho = false, extra = {} } = {}) {
+async function rodarAgente(contatoId, { rascunho = false, extra = {}, enviar = false } = {}) {
   const c = contato(contatoId);
   if (!c) return false;
-  if (ehReal(c)) return atenderNoServidor(contatoId, { rascunho });
+  if (ehReal(c)) return atenderNoServidor(contatoId, { rascunho, enviar });
   if (rodando.has(contatoId)) { deNovo.add(contatoId); return true; }
   const conv = conversa(contatoId);
   if (!conv.mensagens.some((m) => m.de === "cliente" && !m.naIA) && !conv.notas.length) return true;
@@ -1007,7 +1007,7 @@ async function rodarAgente(contatoId, { rascunho = false, extra = {} } = {}) {
   try {
     const { texto } = await N.executarAgente(contatoId, { extra });
     if (texto) {
-      if (modoEfetivo(c) === "auto" && !rascunho) {
+      if ((modoEfetivo(c) === "auto" || enviar) && !rascunho) {
         for (const [i, p] of partesDoTexto(texto).entries()) {
           if (i) { atualizarTela(); await pausa(700); }
           await enviarParte(contatoId, "ia", p, extra);
@@ -1030,14 +1030,14 @@ async function rodarAgente(contatoId, { rascunho = false, extra = {} } = {}) {
 }
 
 /** Contato do WhatsApp: manda o que falta para a nuvem e pede ao servidor para a IA atender. */
-async function atenderNoServidor(contatoId, { rascunho = false } = {}) {
+async function atenderNoServidor(contatoId, { rascunho = false, enviar = false } = {}) {
   if (rodando.has(contatoId)) return true;
   rodando.add(contatoId);
   atualizarTela();
   try {
     await gravarSujos();
     await enviarPendentes();
-    const r = await fetch("/api/atender", { method: "POST", headers: { "content-type": "application/json", "x-crm-sessao": await tokenSessao() }, body: JSON.stringify({ contatoId, rascunho }) });
+    const r = await fetch("/api/atender", { method: "POST", headers: { "content-type": "application/json", "x-crm-sessao": await tokenSessao() }, body: JSON.stringify({ contatoId, rascunho, enviar }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.erro || `erro ${r.status}`);
     await baixarDaNuvem();
@@ -1063,12 +1063,16 @@ function seguirConversa(contatoId) {
   const c = contato(contatoId);
   rodarAgente(contatoId, { rascunho: modoEfetivo(c) === "manual" });
 }
-function donoRespondeNoZap(texto) {
+async function donoRespondeNoZap(texto) {
   if (!texto.trim()) return;
   S.donoZap.push({ id: uid("z"), de: "dono", texto, em: agoraISO() });
   salvar("donoZap");
-  const r = N.donoResponde(texto);
-  if (r.aprovacao) seguirConversa(r.aprovacao.contatoId);
+  atualizarTela();
+  let r;
+  try { r = await N.assistenteDono(texto); } catch (e) { r = { resposta: `Não consegui fazer agora: ${e.message}`, seguir: [], acionar: [], enviar: [] }; }
+  for (const id of r.seguir) seguirConversa(id);
+  for (const { contatoId, texto: t } of r.enviar) await donoEnvia(contatoId, t);
+  for (const id of r.acionar) rodarAgente(id, { enviar: true });
   mensagemAoDono(r.resposta);
   atualizarTela();
 }
@@ -1470,7 +1474,7 @@ TELAS.aprovacoes = () => {
     <div class="celular">
       <header><div class="avatar">🤖</div><div><b>${esc(S.config.marca.nomeIA)}</b><div class="suave peq">no seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : ""}${SERVIDOR.zap ? "" : " · simulado"}</div></div></header>
       <div class="msgs">${S.donoZap.length ? S.donoZap.slice(-60).map((m) => `<div class="bolha ${m.de === "dono" ? "loja" : "cliente"}">${fmtZap(m.texto)}<span class="hora">${hora(m.em)}</span></div>`).join("") : `<div class="vazio">Os pedidos de aprovação da IA chegam aqui.</div>`}</div>
-      <footer><input type="text" id="zap-dono" data-manter placeholder="sim · não · sim 3799 · A2 sim"><button class="btn prim" data-a="zap-dono">➤</button></footer>
+      <footer><input type="text" id="zap-dono" data-manter placeholder="sim · A2 não · manda pro João que o 15 chegou · muda para eu respondo"><button class="btn prim" data-a="zap-dono">➤</button></footer>
     </div>
   </div>`;
 };
@@ -1713,6 +1717,7 @@ function configSecoes() {
     <p class="aviso info" style="margin-top:0">✓ <b>WhatsApp conectado pela Z-API.</b> O servidor atende 24 horas, mesmo com o CRM fechado: das ${esc(S.config.atendimento.noiteInicio)} às ${esc(S.config.atendimento.noiteFim)} a IA responde sozinha; de dia vale o botão em <a href="/modo">/modo</a>. Pedidos de aprovação vão para o seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : " (cadastre o seu número em Dono)"}: responda <b>sim</b>, <b>não</b> ou <b>sim 3799</b>.</p>
     ${SERVIDOR.zapOmni ? `<div class="linha"><button class="btn prim" data-a="ligar-zap">🔗 Ligar mensagens no CRM</button><button class="btn" data-a="estado-zap">Conferir conexão</button><span class="suave peq" id="estado-zap"></span></div>
     <p class="suave peq">Omni Z-API: o botão cadastra no Omni o endereço deste CRM para receber as mensagens. Toque de novo se trocar a ZAPI_WEBHOOK_SEGREDO.</p>` : `<p class="suave peq">Endereço que fica cadastrado na Z-API (em "Ao receber" e em "Enviadas por mim"): <b>${esc(location.origin)}/api/whatsapp?chave=</b> + o valor da variável ZAPI_WEBHOOK_SEGREDO.</p>`}
+    <p class="suave peq"><b>Ordens pelo WhatsApp:</b> do seu WhatsApp pessoal (o de Configurações > Dono) para o número da loja, em texto ou áudio, você responde aprovações e manda ordens. Ex.: "manda pro Marcos que o 15 chegou", "manda exatamente: separei o teu aqui", "chama o 48 99999-0000 e oferece o 13", "deixa a IA responder sozinha", "pausa a IA na conversa da Carla", "o 13 de 128 agora é 2.599", "como tá a conversa com o João?".</p>
     <p class="suave peq">Quando você responde um cliente pelo celular, a IA fica quieta naquela conversa por ${esc(S.config.atendimento.pausaAoAssumirHoras)} h e aprende com a sua resposta.</p>
     <label class="campo" style="max-width:340px"><span>A IA só responde mensagens que chegarem depois de <small>(marcado sozinho ao tocar em "Ligar mensagens no CRM")</small></span><input type="datetime-local" id="ativo-desde" value="${S.config.atendimento.ativoDesde ? paraLocal(new Date(S.config.atendimento.ativoDesde)) : ""}"></label>
     <p class="suave peq">Mensagens de antes dessa hora, com mais de 30 minutos ou do histórico que o WhatsApp sincroniza ao conectar entram no CRM só como informação: sem resposta da IA, sem menu e sem aprovar nada.</p>` : `
@@ -2506,7 +2511,7 @@ ACOES["salvar-config"] = () => {
     if (!cfg[grupo] || !(campo in cfg[grupo]) || el.type === "file") continue;
     cfg[grupo][campo] = el.type === "checkbox" ? el.checked : el.type === "number" ? Number(el.value) : el.value.trim();
   }
-  cfg.dono.whatsapp = soDigitos(cfg.dono.whatsapp);
+  cfg.dono.whatsapp = telefoneCompleto(cfg.dono.whatsapp);
   const desde = $("#ativo-desde");
   if (desde) cfg.atendimento.ativoDesde = desde.value ? (deLocal(desde.value)?.toISOString() ?? cfg.atendimento.ativoDesde) : null;
   salvar("config"); aplicarMarca(); render();
