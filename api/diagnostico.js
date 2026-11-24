@@ -52,5 +52,8 @@ export async function GET(request) {
       item(w.ok, "Mensagens chegando no CRM (webhook)", w.detalhe);
     }
   }
-  return Response.json({ itens, tudoOk: itens.every((i) => i.ok) }, { headers: { "cache-control": "no-store" } });
+  // charset explícito: sem ele o Safari do iPhone mostra "nÃ£o" no lugar de "não".
+  return new Response(JSON.stringify({ tudoOk: itens.every((i) => i.ok), itens }, null, 2), {
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+  });
 }

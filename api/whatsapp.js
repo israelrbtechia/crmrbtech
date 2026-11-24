@@ -24,5 +24,7 @@ export async function POST(request) {
 
 /** Para conferir no navegador se o endereço está certo. */
 export function GET(request) {
-  return Response.json(segredoCerto(request) ? { ok: true, mensagem: "Endereço certo: cadastre este link na Z-API." } : { ok: false, mensagem: "Chave errada ou ZAPI_WEBHOOK_SEGREDO não cadastrada." }, { status: segredoCerto(request) ? 200 : 401 });
+  const certo = segredoCerto(request);
+  const corpo = certo ? { ok: true, mensagem: "Endereço certo: cadastre este link na Z-API." } : { ok: false, mensagem: "Chave errada ou ZAPI_WEBHOOK_SEGREDO não cadastrada." };
+  return new Response(JSON.stringify(corpo, null, 2), { status: certo ? 200 : 401, headers: { "content-type": "application/json; charset=utf-8" } });
 }
