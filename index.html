@@ -273,7 +273,7 @@ import {
   dataLocalISO, horaLocal, deLocal, paraLocal, hora, dataCurta, dataHora,
   ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, CONDICOES, INSTRUCOES_EXEMPLO,
   FONTE_SITE_PADRAO, FOTOS_MODELO_SITE, REGRAS_SITE, TROCAS_REGRAS, atualizarRegras,
-  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento,
+  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig,
 } from "./nucleo/negocio.js";
 
 /* =====================================================================
@@ -373,12 +373,7 @@ async function carregarTudo() {
   }
   S.config = mesclar(CONFIG_PADRAO, S.config);
   S.estilo = mesclar(ESTILO_PADRAO, S.estilo);
-  if ((S.config.ia.regrasVersao || 1) < 4) {
-    S.config.ia.instrucoes = atualizarRegras(S.config.ia.instrucoes);
-    S.config.loja.pagamento = String(S.config.loja.pagamento || "").replace(/\s*Não fazemos boleto\.?\s*$/i, "");
-    S.config.ia.regrasVersao = 4;
-    await kvSet("config", S.config);
-  }
+  if (migrarConfig(S.config)) await kvSet("config", S.config);
   if (!S.config.atendimento.migrouModo) {
     // Antes cada conversa tinha o seu modo; agora vale o modo geral (botão /modo) e, à noite, a IA sozinha.
     for (const c of S.contatos || []) if (c.modo !== "manual") c.modo = "geral";
