@@ -279,7 +279,7 @@ import {
   dataLocalISO, horaLocal, deLocal, paraLocal, hora, dataCurta, dataHora,
   ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, CONDICOES, INSTRUCOES_EXEMPLO,
   FONTE_SITE_PADRAO, FOTOS_MODELO_SITE, REGRAS_SITE, TROCAS_REGRAS, atualizarRegras,
-  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig,
+  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig, semTagsDeVoz,
 } from "./nucleo/negocio.js";
 
 /* =====================================================================
@@ -693,18 +693,19 @@ async function entregarNoWhatsapp(contatoId, m) {
   }
 }
 async function montarParte(contatoId, de, parte, extra = {}) {
-  if (!MARCA_AUDIO.test(parte)) return adicionarMensagem(contatoId, de, parte, extra);
+  // As marcações de emoção da voz ([excited], [laughs]...) só servem para o áudio: nunca vão escritas.
+  if (!MARCA_AUDIO.test(parte)) { const t = semTagsDeVoz(parte); return t ? adicionarMensagem(contatoId, de, t, extra) : null; }
   const fala = parte.replace(MARCA_AUDIO, "").trim();
-  if (!fala) return null;
+  if (!semTagsDeVoz(fala)) return null;
   if (SERVIDOR.voz) {
     try {
       const audio = await gerarAudio(fala);
-      return adicionarMensagem(contatoId, de, fala, { ...extra, tipo: "audio", audio });
+      return adicionarMensagem(contatoId, de, semTagsDeVoz(fala), { ...extra, tipo: "audio", audio });
     } catch (e) {
       evento(contatoId, `⚠️ Não consegui gerar o áudio (${e.message}): a mensagem foi como texto.`, { erro: true });
     }
   }
-  return adicionarMensagem(contatoId, de, fala, extra);
+  return adicionarMensagem(contatoId, de, semTagsDeVoz(fala), extra);
 }
 
 /** Login "usuário e senha" do CRM: o servidor confere e devolve a sessão do Supabase. */
@@ -1651,6 +1652,7 @@ TELAS.config = () => {
       <div class="campo"><span>Sua voz</span><div>${SERVIDOR.voz ? `<span class="etq vd">✓ voz da ElevenLabs ligada</span>` : `<span class="etq vm">Faltam ELEVENLABS_API_KEY e ELEVENLABS_VOICE_ID na Vercel</span>`}</div></div>
       <label class="campo"><span>Quando responder em áudio</span><select id="c-audio-modo">${[["desligado", "Nunca (só texto)"], ["espelhar", "Quando o cliente mandar áudio (recomendado)"], ["espelhar_primeira", "Quando o cliente mandar áudio e na primeira resposta de cada conversa"]].map(([v, t]) => `<option value="${v}" ${S.config.audio.modo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
       <label class="campo"><span>Duração máxima do áudio (segundos)</span><input type="number" id="c-audio-maxSegundos" min="8" max="60" value="${S.config.audio.maxSegundos}"></label>
+      <label class="campo largo"><span>Jeito de falar nos áudios <small>(sotaque, expressões, energia: a IA escreve a fala assim)</small></span><textarea id="c-audio-jeito" rows="6">${esc(S.config.audio.jeito)}</textarea></label>
       ${SERVIDOR.voz ? `<div class="campo"><span>Teste</span><div><button class="btn" data-a="testar-voz">▶ Ouvir minha voz</button></div></div>` : ""}
     </div>
     <p class="suave peq">Cada áudio gasta créditos da ElevenLabs (cerca de 1 crédito por letra falada). No modo "IA sugere", a parte marcada com [ÁUDIO] aparece na sugestão e só vira áudio quando você enviar.</p>

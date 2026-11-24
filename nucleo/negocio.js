@@ -16,6 +16,13 @@ export const brl = (v) => (v === null || v === undefined || v === "" || Number.i
 export const semComentarios = (t) => String(t || "").split("\n").filter((l) => !l.trim().startsWith("#")).join("\n").trim();
 export const MARCA_AUDIO = /^\[(ÁUDIO|AUDIO)\]\s*/i;
 /** Divide a resposta da IA nas mensagens separadas por ---. */
+/** Marcações de emoção da voz ([excited], [laughs]...): só servem para o áudio; nunca vão escritas. */
+export const semTagsDeVoz = (t) => String(t || "").replace(/\[(?!ÁUDIO\]|AUDIO\])[a-z][a-z ]{1,30}\]\s?/gi, "").replace(/[ \t]{2,}/g, " ").trim();
+export const JEITO_AUDIO_PADRAO = `Fale como eu falo nos meus áudios: manezinho de Floripa, extrovertido, animado e de boa, como quem conversa com um amigo, com interesse de verdade na pessoa.
+- Uso "tu" com o verbo assim: "tu quer", "tu vai", "tu consegue", "tu me mandou".
+- Muletas minhas: "ali" ("aquele 13 ali"), "né?", "tá?", "ó", "ô", "olha só", "bora".
+- Com quem já tem intimidade, chamo de "gato" ou "gatão"; com cliente novo, "meu querido" ou pelo nome.
+- Frases curtas, ritmo de conversa, risada leve quando cabe. Uma ou duas expressões por áudio, sem exagerar.`;
 export const partesDoTexto = (texto) => String(texto || "").split(/\n\s*---+\s*\n/).map((t) => t.trim()).filter(Boolean);
 /** No Brasil o WhatsApp às vezes manda o celular sem o nono dígito: serve só para comparar números. */
 export function chaveNumero(numero) {
@@ -170,7 +177,7 @@ export const CONFIG_PADRAO = {
   dono: { nome: "", whatsapp: "" },
   google: { clientId: "", calendarId: "primary" },
   importacao: { fonte: FONTE_SITE_PADRAO, auto: true, ultimaEm: null, resumo: "" },
-  audio: { modo: "espelhar", maxSegundos: 25 },
+  audio: { modo: "espelhar", maxSegundos: 25, jeito: JEITO_AUDIO_PADRAO },
   // Quem responde: à noite a IA responde sozinha; de dia, vale o modo escolhido no botão (/modo).
   atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3 },
   // Saudação com menu: na primeira mensagem e quando o cliente volta depois de alguns dias sem conversa.
@@ -597,7 +604,7 @@ export function criarNucleo(S, ctx = {}) {
       comps.length ? `Compromissos deste cliente:\n${comps.join("\n")}` : "",
       beneficiosStatus(c.id),
       pedirAudio
-        ? `RESPONDA COM UM ÁUDIO (${veioAudio ? "o cliente mandou áudio" : "é a sua primeira resposta nesta conversa"}): comece a resposta com uma parte marcada [ÁUDIO], com no máximo ${Math.round(S.config.audio.maxSegundos * 2.3)} palavras, falada como você falaria num áudio de WhatsApp: chame pelo nome, mostre que entendeu o que ele disse e crie conexão. No áudio, nada de preços, números de parcelas, links ou listas: isso vai em texto, nas partes seguintes, separadas por ---.`
+        ? `RESPONDA COM UM ÁUDIO (${veioAudio ? "o cliente mandou áudio" : "é a sua primeira resposta nesta conversa"}): comece a resposta com uma parte marcada [ÁUDIO], com no máximo ${Math.round(S.config.audio.maxSegundos * 2.3)} palavras, escrita como FALA (não como texto): chame pelo nome, mostre que entendeu o que ele disse e crie conexão. Jeito de falar do dono nos áudios:\n${semComentarios(S.config.audio.jeito || JEITO_AUDIO_PADRAO)}\nPara a voz ter emoção e não soar robótica, coloque de 2 a 4 marcações em inglês, entre colchetes, logo antes do trecho que elas colorem: [excited], [happy], [warmly], [laughs], [chuckles], [curious], [surprised], [softly], [short pause]. Descreva como a frase é falada, nunca uma ação. Use reticências e vírgulas para as pausas e o ritmo. Ex.: "[excited] Ô Marcos, tudo certo? [chuckles] Olha só, aquele 13 ali tá separadinho, tá? [warmly] Tu quer passar aqui hoje?". No áudio, nada de preços, números de parcelas, links ou listas: isso vai em texto, nas partes seguintes, separadas por ---. Nas partes de texto, nunca use as marcações.`
         : veioAudio ? "O cliente mandou áudio (já transcrito acima). Responda em texto." : "",
       notas.length ? `Desde a sua última resposta:\n${notas.map((n) => `- ${n}`).join("\n")}` : "",
     ].filter(Boolean).join("\n\n");

@@ -68,7 +68,7 @@ Logos em [`marca/`](marca/): `crmy-logo.svg` (fundo escuro), `crmy-logo-fundo-cl
 | `GOOGLE_CLIENT_ID` | Client ID do Google Agenda (opcional) |
 | `ELEVENLABS_API_KEY` | Chave da API da ElevenLabs, para a IA responder em áudio com a sua voz (opcional). Marque como **Sensitive**. |
 | `ELEVENLABS_VOICE_ID` | ID da voz clonada na ElevenLabs (opcional) |
-| `ELEVENLABS_MODEL` | Modelo da fala (opcional; padrão `eleven_multilingual_v2`) |
+| `ELEVENLABS_MODEL` | Modelo da fala (opcional; padrão `eleven_v4`, o mais expressivo; se a conta não tiver acesso, cai para o `eleven_multilingual_v2`) |
 | `ZAPI_INSTANCIA` | "ID do canal" no Omni Z-API (ou ID da instância na Z-API clássica) |
 | `ZAPI_SECRET` | Omni Z-API: a Secret Key (menu Segurança). Marque como **Sensitive**. |
 | `ZAPI_TOKEN` | Token do canal/instância (no Omni é opcional: o CRM busca sozinho). Marque como **Sensitive**. |
