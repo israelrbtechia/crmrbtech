@@ -23,6 +23,14 @@ export const JEITO_AUDIO_PADRAO = `Fale como eu falo nos meus áudios: manezinho
 - Muletas minhas: "ali" ("aquele 13 ali"), "né?", "tá?", "ó", "ô", "olha só", "bora".
 - Com quem já tem intimidade, chamo de "gato" ou "gatão"; com cliente novo, "meu querido" ou pelo nome.
 - Frases curtas, ritmo de conversa, risada leve quando cabe. Uma ou duas expressões por áudio, sem exagerar.`;
+/**
+ * Texto que a API aceita: troca "meio emoji" (pedaço de par substituto que sobrou de um corte)
+ * por \uFFFD. Sem isso a API recusa o pedido inteiro ("unexpected end of hex escape").
+ */
+export const textoValido = (t) => String(t).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+/** Corta o texto em n caracteres sem partir emoji ao meio. */
+export const cortar = (t, n) => { const a = Array.from(String(t ?? "")); return a.length > n ? a.slice(0, n).join("") : a.join(""); };
+const limparParaApi = (v) => (typeof v === "string" ? textoValido(v) : Array.isArray(v) ? v.map(limparParaApi) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, limparParaApi(x)])) : v);
 export const partesDoTexto = (texto) => String(texto || "").split(/\n\s*---+\s*\n/).map((t) => t.trim()).filter(Boolean);
 /** No Brasil o WhatsApp às vezes manda o celular sem o nono dígito: serve só para comparar números. */
 export function chaveNumero(numero) {
@@ -1026,7 +1034,7 @@ export function criarNucleo(S, ctx = {}) {
     };
   }
   async function chamar(params) {
-    const r = await ctx.chamarClaude(parametrosClaude(params));
+    const r = await ctx.chamarClaude(limparParaApi(parametrosClaude(params)));
     contarUso(r);
     return r;
   }
@@ -1106,7 +1114,7 @@ Escreva tudo em português do Brasil.`;
   function transcricao(c) {
     const msgs = conversa(c.id).mensagens.slice(-45).map((m) => {
       const quem = { cliente: "CLIENTE", ia: "IA", dono: "DONO (pelo celular)", evento: "· evento" }[m.de] || m.de;
-      return `[${dataHora(m.em)}] ${quem}${m.tipo === "audio" ? " (áudio)" : ""}${m.followup ? ` (follow-up ${m.followup})` : ""}${m.saudacao ? " (saudação automática)" : ""}: ${String(m.texto || "").slice(0, 700)}`;
+      return `[${dataHora(m.em)}] ${quem}${m.tipo === "audio" ? " (áudio)" : ""}${m.followup ? ` (follow-up ${m.followup})` : ""}${m.saudacao ? " (saudação automática)" : ""}: ${cortar(m.texto || "", 700)}`;
     });
     return `## Conversa com ${nomeCli(c)}\nCartão: fase ${NOME_ESTAGIO[c.estagio]} | temperatura ${c.temperatura || "-"} | interesse ${c.interesse || "-"} | origem ${c.origemLead || "-"} | resumo ${c.resumo || "-"}\n${msgs.join("\n")}`;
   }
@@ -1397,7 +1405,7 @@ Escreva tudo em português do Brasil.`;
     const ativos = S.contatos.filter((c) => !c.teste).sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm))).slice(0, 30).map((c) => {
       const ult = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1);
       const quem = ult ? { cliente: "cliente", ia: "IA", dono: "você" }[ult.de] || ult.de : "";
-      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${String(ult.texto || "").slice(0, 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}`;
+      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}`;
     });
     const fim = new Date(agora.getTime() + 2 * 864e5);
     const comps = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= agora && deLocal(x.inicio) <= fim).map((x) => `${dataHora(deLocal(x.inicio).toISOString())} ${TIPOS[x.tipo]} com ${nomeCli(contato(x.contatoId))}`);
@@ -1480,7 +1488,7 @@ Escreva tudo em português do Brasil.`;
       case "ver_conversa": {
         const c = cli(ent.contato_id);
         const msgs = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").slice(-20);
-        return { cliente: nomeCli(c), fase: NOME_ESTAGIO[c.estagio], mensagens: msgs.map((m) => `${dataHora(m.em)} ${{ cliente: "cliente", ia: "IA", dono: "você" }[m.de] || m.de}: ${String(m.texto || "").slice(0, 300)}`) };
+        return { cliente: nomeCli(c), fase: NOME_ESTAGIO[c.estagio], mensagens: msgs.map((m) => `${dataHora(m.em)} ${{ cliente: "cliente", ia: "IA", dono: "você" }[m.de] || m.de}: ${cortar(m.texto || "", 300)}`) };
       }
       default: return { erro: `Ferramenta desconhecida: ${nome}` };
     }
@@ -1503,7 +1511,7 @@ Escreva tudo em português do Brasil.`;
       saida.resposta = r.resposta;
       return saida;
     }
-    const historico = S.donoZap.slice(-12, -1).map((m) => `${m.de === "dono" ? "Dono" : "Assistente"}: ${String(m.texto || "").slice(0, 400)}`).join("\n");
+    const historico = S.donoZap.slice(-12, -1).map((m) => `${m.de === "dono" ? "Dono" : "Assistente"}: ${cortar(m.texto || "", 400)}`).join("\n");
     const sistema = `Você é o assistente pessoal do dono da ${S.config.marca.nome}${S.config.marca.complemento ? ` ${S.config.marca.complemento}` : ""}, no WhatsApp dele. Ele fala com você do WhatsApp pessoal (texto ou áudio transcrito, às vezes com erros de português) e você executa as ordens no CRM com as ferramentas.
 - Para falar com um cliente, use mandar_para_cliente com uma instrução para a IA vendedora (ela escreve do jeito da loja). Use texto_exato só se ele ditou a mensagem palavra por palavra.
 - Se não der para saber qual cliente é, pergunte, mostrando 2 ou 3 opções com nome e final do telefone. Não chute.
