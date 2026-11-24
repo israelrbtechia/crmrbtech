@@ -154,6 +154,8 @@ export const CONFIG_PADRAO = {
   atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3 },
   // Saudação com menu: na primeira mensagem e quando o cliente volta depois de alguns dias sem conversa.
   saudacao: { ativa: true, diasSemFalar: 5, texto: SAUDACAO_PADRAO },
+  // Inspetor de vendas: lê as últimas conversas e sugere melhorias para a IA.
+  inspetor: { auto: false, conversas: 3, modelo: "claude-opus-5-5", ultimaEm: null },
   // Lead de anúncio: chega com mensagem pronta; a IA qualifica em vez de responder ao pé da letra.
   anuncio: { ativo: true, semMenu: true, frases: FRASES_ANUNCIO_PADRAO, instrucoes: QUALIFICAR_ANUNCIO_PADRAO },
   followup: {
@@ -218,9 +220,9 @@ export function mesclarChave(k, base, local, remoto) {
   if (local === undefined || local === null) return remoto;
   if (json(local) === json(base)) return remoto; // nada mudou aqui
   if (json(remoto) === json(base)) return local; // nada mudou lá
-  if (["contatos", "aprovacoes", "compromissos", "catalogo", "donoZap", "log"].includes(k) && Array.isArray(local)) {
+  if (["contatos", "aprovacoes", "compromissos", "catalogo", "donoZap", "log", "inspecoes"].includes(k) && Array.isArray(local)) {
     const r = mesclarLista3(base, local, remoto);
-    if (k === "log" || k === "donoZap") r.sort((a, b) => String(b.em).localeCompare(String(a.em)) * (k === "log" ? 1 : -1));
+    if (k === "log" || k === "donoZap" || k === "inspecoes") r.sort((a, b) => String(b.em).localeCompare(String(a.em)) * (k === "donoZap" ? -1 : 1));
     return r;
   }
   if (k.startsWith("conv:")) {
@@ -967,7 +969,7 @@ export function criarNucleo(S, ctx = {}) {
   // ---------------------------------------------------------------- parâmetros da chamada à API
   /** Mesmos parâmetros no navegador e no servidor: fallback do servidor e raciocínio que não quebra conversa. */
   function parametrosClaude(params) {
-    const modelo = S.config.ia.modelo;
+    const modelo = params.model || S.config.ia.modelo;
     const comFallback = modelo === "claude-opus-5-5" || modelo === "claude-sonnet-5-5";
     return {
       model: modelo,
@@ -982,6 +984,147 @@ export function criarNucleo(S, ctx = {}) {
     const r = await ctx.chamarClaude(parametrosClaude(params));
     contarUso(r);
     return r;
+  }
+
+  // ---------------------------------------------------------------- inspetor de vendas
+  const PROMPT_INSPETOR = `Você é o inspetor de vendas da loja: um especialista sênior em fechamento de vendas e condução de negociação pelo WhatsApp no varejo de iPhones e celulares no Brasil.
+Você conhece o cliente de 2026: muitos chegam por anúncio com uma pergunta pronta; pesquisam o preço em várias lojas ao mesmo tempo; comparam Pix à vista com parcelado no cartão; querem segurança no seminovo (procedência, saúde da bateria, garantia, nota); mandam áudio; somem se a resposta demora ou se sentem empurrados; e decidem por confiança, rapidez e por sentir que o vendedor quer resolver o problema deles.
+
+Sua tarefa: ler as conversas mais recentes da IA vendedora da loja, junto com os números do funil, e propor as melhorias que mais vão fazer a IA vender.
+
+Como analisar cada conversa:
+- Onde a venda avançou e onde travou ou esfriou? Qual foi a última mensagem da IA antes do cliente sumir?
+- A IA entendeu o que o cliente queria e qualificou (modelo, armazenamento, novo ou seminovo, troca, prazo) com uma pergunta por vez?
+- Perguntou algo que o cliente já tinha dito? Respondeu de forma genérica, longa demais ou com cara de robô?
+- Conduziu para o fechamento (opção certa e o porquê, escolha entre duas opções, fechamento assumido, próximo passo concreto)?
+- Como tratou objeções de preço, de "vou pensar" e de comparação com outra loja?
+- Usou gatilhos com verdade (escassez real, prova social, garantia, benefício)? Falou de pagamento na hora certa?
+- Quebrou alguma regra fixa (preço inventado, venda sem aprovação, citar o dono para o cliente)?
+- O tom foi de boa, com interesse real na pessoa?
+
+Regras para as melhorias:
+- No máximo 5, as de maior impacto primeiro.
+- Cada melhoria vira uma regra curta, imperativa, em português, no tom do dono, pronta para colar nas instruções da IA.
+- Baseie cada uma num trecho real das conversas. Em "antes", copie a mensagem da IA que mostra o problema; em "depois", escreva como deveria ter sido.
+- Não repita o que já está nas instruções. Se a IA está ignorando uma instrução que já existe, reescreva a regra mais clara e mais forte e diga isso em "por_que".
+- Nunca contrarie as regras fixas (aprovação do dono antes de fechar, preços só do catálogo, não inventar estoque nem promoção).
+- Se as conversas forem poucas ou curtas demais para concluir algo, diga isso no resumo e proponha menos melhorias.
+Escreva tudo em português do Brasil.`;
+  const SCHEMA_INSPECAO = {
+    type: "object", additionalProperties: false,
+    required: ["nota", "resumo", "pontos_fortes", "problemas", "melhorias"],
+    properties: {
+      nota: { type: "integer", description: "Nota de 0 a 10 para o atendimento da IA nestas conversas" },
+      resumo: { type: "string", description: "3 a 5 linhas: como a IA está vendendo e o que mais pesa" },
+      pontos_fortes: { type: "array", items: { type: "string" } },
+      problemas: {
+        type: "array",
+        items: { type: "object", additionalProperties: false, required: ["conversa", "trecho", "problema"], properties: { conversa: { type: "string" }, trecho: { type: "string" }, problema: { type: "string" } } },
+      },
+      melhorias: {
+        type: "array",
+        items: {
+          type: "object", additionalProperties: false,
+          required: ["titulo", "prioridade", "por_que", "regra", "antes", "depois"],
+          properties: {
+            titulo: { type: "string" }, prioridade: { type: "string", enum: ["alta", "media", "baixa"] }, por_que: { type: "string" },
+            regra: { type: "string", description: "A regra pronta para colar nas instruções da IA" }, antes: { type: "string" }, depois: { type: "string" },
+          },
+        },
+      },
+    },
+  };
+  /** As últimas conversas em que a IA atendeu (o cliente falou e a IA respondeu). */
+  function conversasParaInspecionar(n = 3) {
+    const ultimaDe = (c) => conversa(c.id).mensagens.filter((m) => m.de !== "evento").at(-1)?.em || "";
+    return S.contatos
+      .filter((c) => !c.teste && S.conv[c.id] && S.conv[c.id].mensagens.some((m) => m.de === "cliente") && S.conv[c.id].mensagens.some((m) => m.de === "ia"))
+      .sort((a, b) => ultimaDe(b).localeCompare(ultimaDe(a)))
+      .slice(0, n);
+  }
+  /** Números do funil dos clientes deste ano, para o inspetor. */
+  function metricasFunil() {
+    const ano = agoraISO().slice(0, 4);
+    const doAno = S.contatos.filter((c) => !c.teste && String(c.criadoEm || "").startsWith(ano));
+    const por = Object.fromEntries(ESTAGIOS.map(([k]) => [k, doAno.filter((c) => c.estagio === k).length]));
+    const anuncio = doAno.filter((c) => c.origemLead === "anuncio");
+    const ap = S.aprovacoes.filter((a) => String(a.criadaEm || "").startsWith(ano));
+    const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : "-");
+    const fechados = doAno.filter((c) => ["fechado", "posvenda"].includes(c.estagio)).length;
+    return [
+      `Clientes de ${ano} no CRM: ${doAno.length}. Por fase: ${ESTAGIOS.map(([k, nome]) => `${nome} ${por[k]}`).join(", ")}.`,
+      `Conversão (fechado + pós-venda): ${fechados} de ${doAno.length} (${pct(fechados, doAno.length)}). Perdidos: ${por.perdido} (${pct(por.perdido, doAno.length)}), ${doAno.filter((c) => c.perdidoPorFollowup).length} deles por não responder aos follow-ups.`,
+      `Leads de anúncio: ${anuncio.length}, fechados ${anuncio.filter((c) => ["fechado", "posvenda"].includes(c.estagio)).length}.`,
+      `Pedidos ao dono: ${ap.filter((a) => a.tipo !== "decisao").length} aprovações (${ap.filter((a) => a.status === "aprovada").length} aprovadas, ${ap.filter((a) => a.status === "recusada").length} recusadas) e ${ap.filter((a) => a.tipo === "decisao").length} decisões de estoque.`,
+    ].join("\n");
+  }
+  function transcricao(c) {
+    const msgs = conversa(c.id).mensagens.slice(-45).map((m) => {
+      const quem = { cliente: "CLIENTE", ia: "IA", dono: "DONO (pelo celular)", evento: "· evento" }[m.de] || m.de;
+      return `[${dataHora(m.em)}] ${quem}${m.tipo === "audio" ? " (áudio)" : ""}${m.followup ? ` (follow-up ${m.followup})` : ""}${m.saudacao ? " (saudação automática)" : ""}: ${String(m.texto || "").slice(0, 700)}`;
+    });
+    return `## Conversa com ${nomeCli(c)}\nCartão: fase ${NOME_ESTAGIO[c.estagio]} | temperatura ${c.temperatura || "-"} | interesse ${c.interesse || "-"} | origem ${c.origemLead || "-"} | resumo ${c.resumo || "-"}\n${msgs.join("\n")}`;
+  }
+  /** Roda o inspetor: lê as últimas conversas e devolve (e guarda) as melhorias sugeridas. */
+  async function inspecionar({ quantas } = {}) {
+    const cfg = S.config.inspetor || {};
+    const lista = conversasParaInspecionar(quantas || Number(cfg.conversas) || 3);
+    if (!lista.length) throw new Error("Ainda não há conversas em que a IA atendeu para inspecionar.");
+    const contexto = [
+      `# Números do funil\n${metricasFunil()}`,
+      `# Instruções atuais da IA (as que o dono escreveu)\n${semComentarios(S.config.ia.instrucoes) || "(nenhuma)"}`,
+      S.config.anuncio?.ativo ? `# Como a IA deve tratar lead de anúncio\n${semComentarios(S.config.anuncio.instrucoes)}` : "",
+      `# Orientação de follow-up\n${S.config.followup.instrucoes || "-"}`,
+      S.estilo.guia ? `# Guia de estilo do dono\n${S.estilo.guia}` : "",
+      `# As ${lista.length} conversas mais recentes\n\n${lista.map(transcricao).join("\n\n")}`,
+    ].filter(Boolean).join("\n\n");
+    const modelo = cfg.modelo || "claude-opus-5-5";
+    const r = await chamar({
+      model: modelo, max_tokens: 16000, system: PROMPT_INSPETOR,
+      messages: [{ role: "user", content: contexto }],
+      output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA_INSPECAO } },
+    });
+    if (r.stop_reason === "refusal") throw new Error("O inspetor não conseguiu analisar estas conversas.");
+    if (r.stop_reason === "max_tokens") throw new Error("A análise do inspetor veio cortada. Tente de novo.");
+    let dados;
+    try { dados = JSON.parse(r.content.filter((b) => b.type === "text").map((b) => b.text).join("")); } catch { throw new Error("O inspetor devolveu uma resposta que não deu para ler. Tente de novo."); }
+    const insp = {
+      id: uid("i"), em: agoraISO(), modelo,
+      conversas: lista.map((c) => ({ id: c.id, nome: nomeCli(c) })),
+      nota: Math.max(0, Math.min(10, Number(dados.nota) || 0)), resumo: dados.resumo || "",
+      pontosFortes: dados.pontos_fortes || [], problemas: dados.problemas || [],
+      melhorias: (dados.melhorias || []).slice(0, 5).map((m) => ({ id: uid("m"), ...m, status: "nova" })),
+    };
+    S.inspecoes = [insp, ...(S.inspecoes || [])].slice(0, 20);
+    S.config.inspetor = { ...cfg, ultimaEm: insp.em };
+    salvar("inspecoes", "config");
+    registrar(`🔍 Inspetor de vendas: nota ${insp.nota}/10, ${insp.melhorias.length} melhoria(s) sugerida(s).`);
+    return insp;
+  }
+  /** Coloca a regra sugerida nas instruções da IA (no fim, numa seção própria). */
+  function aplicarMelhoria(inspecaoId, melhoriaId) {
+    const insp = (S.inspecoes || []).find((x) => x.id === inspecaoId);
+    const m = insp?.melhorias.find((x) => x.id === melhoriaId);
+    if (!m || m.status === "aplicada") return null;
+    const titulo = "# Melhorias do inspetor de vendas";
+    let t = S.config.ia.instrucoes || "";
+    if (!t.includes(titulo)) t = `${t.trimEnd()}\n\n${titulo}`;
+    S.config.ia.instrucoes = `${t.trimEnd()}\n- ${String(m.regra).trim()}`;
+    m.status = "aplicada"; m.aplicadaEm = agoraISO();
+    salvar("config", "inspecoes");
+    registrar(`🔍 Melhoria aplicada nas instruções da IA: ${m.titulo}`);
+    return m;
+  }
+  function ignorarMelhoria(inspecaoId, melhoriaId) {
+    const m = (S.inspecoes || []).find((x) => x.id === inspecaoId)?.melhorias.find((x) => x.id === melhoriaId);
+    if (!m || m.status !== "nova") return null;
+    m.status = "ignorada";
+    salvar("inspecoes");
+    return m;
+  }
+  /** Resumo curto para o WhatsApp do dono. */
+  function resumoInspecao(insp) {
+    return `🔍 *Inspeção de vendas*: nota ${insp.nota}/10\n\n${insp.resumo}\n\n${insp.melhorias.length ? `*Melhorias sugeridas:*\n${insp.melhorias.map((m, i) => `${i + 1}. ${m.titulo} (${m.prioridade})`).join("\n")}\n\nPara aplicar, abra o CRM em Cérebro da IA > Inspetor de vendas.` : "Nenhuma melhoria nova desta vez. 👍"}`;
   }
 
   // ---------------------------------------------------------------- lead de anúncio
@@ -1229,6 +1372,6 @@ export function criarNucleo(S, ctx = {}) {
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde,
+    noturno, modoEfetivo, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde,
   };
 }

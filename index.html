@@ -335,8 +335,8 @@ function catalogoPronto() {
 }
 
 // ---------------------------------------------------------------- estado
-const S = { config: null, catalogo: [], contatos: [], aprovacoes: [], compromissos: [], estilo: null, donoZap: [], log: [], uso: {}, conv: {}, seq: { aprov: 0 }, siteDados: null };
-const CHAVES = ["config", "catalogo", "contatos", "aprovacoes", "compromissos", "estilo", "donoZap", "log", "uso", "seq", "siteDados"];
+const S = { config: null, catalogo: [], contatos: [], aprovacoes: [], compromissos: [], estilo: null, donoZap: [], log: [], uso: {}, conv: {}, seq: { aprov: 0 }, siteDados: null, inspecoes: [] };
+const CHAVES = ["config", "catalogo", "contatos", "aprovacoes", "compromissos", "estilo", "donoZap", "log", "uso", "seq", "siteDados", "inspecoes"];
 
 // O núcleo (nucleo/negocio.js) é o mesmo que roda no servidor: aqui ele ganha o que é do navegador.
 const N = criarNucleo(S, {
@@ -1533,6 +1533,8 @@ TELAS.ia = () => {
   <div class="cartao"><textarea id="ia-instrucoes" rows="12">${esc(S.config.ia.instrucoes)}</textarea>
   <div class="linha" style="margin-top:8px"><button class="btn prim" data-a="salvar-instrucoes">Salvar instruções</button><button class="btn" data-a="ver-prompt">Ver tudo que a IA recebe</button><span class="suave peq">As regras de aprovação e agenda já vêm prontas e não podem ser desligadas.</span></div></div>
 
+  ${painelInspetor()}
+
   <h2>Seu jeito de escrever</h2>
   <div class="grade g2">
     <div class="cartao"><h3>1. Importe suas conversas</h3>
@@ -1555,6 +1557,33 @@ TELAS.ia = () => {
   ${e.correcoes.length ? `<h2>Últimas correções</h2><div class="grade g2">${e.correcoes.slice(-6).reverse().map((x) => `<div class="exemplo"><div class="c">IA: ${esc(x.rascunho)}</div><div class="d">Você: ${esc(x.final)}</div></div>`).join("")}</div>` : ""}`;
 };
 
+/** Inspetor de vendas: lê as últimas conversas e sugere melhorias para a IA. */
+function painelInspetor() {
+  const cfg = S.config.inspetor;
+  const ult = (S.inspecoes || [])[0];
+  const prio = { alta: "vm", media: "am", baixa: "" };
+  const melhoria = (m) => `<div class="cartao" style="margin:8px 0">
+      <div class="linha"><b>${esc(m.titulo)}</b><span class="espaco"></span><span class="etq ${prio[m.prioridade] || ""}">${esc(m.prioridade)}</span>${m.status !== "nova" ? `<span class="etq ${m.status === "aplicada" ? "vd" : ""}">${m.status}</span>` : ""}</div>
+      <p class="suave peq" style="margin:6px 0">${esc(m.por_que)}</p>
+      <p class="peq" style="margin:6px 0">📌 <b>Regra:</b> ${esc(m.regra)}</p>
+      ${m.antes || m.depois ? `<div class="grade g2" style="margin-top:6px">${m.antes ? `<div class="exemplo"><div class="c">Como a IA fez</div><div class="d">${esc(m.antes)}</div></div>` : ""}${m.depois ? `<div class="exemplo"><div class="c">Como deveria</div><div class="d">${esc(m.depois)}</div></div>` : ""}</div>` : ""}
+      ${m.status === "nova" ? `<div class="linha" style="margin-top:8px"><button class="btn ok pq" data-a="aplicar-melhoria" data-i="${ult.id}" data-id="${m.id}">✅ Aplicar nas instruções</button><button class="btn pq" data-a="ignorar-melhoria" data-i="${ult.id}" data-id="${m.id}">Ignorar</button></div>` : ""}
+    </div>`;
+  return `<h2>🔍 Inspetor de vendas</h2>
+  <div class="cartao">
+    <p class="suave peq" style="margin-top:0">Um especialista em fechamento de vendas e negociação lê as últimas ${esc(cfg.conversas || 3)} conversas da IA, junto com os números do funil deste ano, e sugere melhorias. Você escolhe quais entram nas instruções.</p>
+    <div class="linha"><button class="btn prim" data-a="inspecionar">🔍 Inspecionar agora</button>
+      <label class="linha" style="cursor:pointer"><input type="checkbox" data-a="inspetor-auto" ${cfg.auto ? "checked" : ""}> Inspecionar sozinho 1x por dia (se tiver conversa nova) e me mandar o resumo no WhatsApp</label></div>
+    ${ult ? `<div style="margin-top:14px">
+      <div class="linha"><b style="font-size:1.3em">${ult.nota}/10</b><span class="suave peq">Inspeção de ${dataHora(ult.em)} · conversas: ${ult.conversas.map((c) => `<a href="#conversas/${c.id}">${esc(c.nome)}</a>`).join(", ")}</span></div>
+      <p style="white-space:pre-wrap">${esc(ult.resumo)}</p>
+      ${ult.pontosFortes.length ? `<p class="peq"><b>👍 Pontos fortes:</b> ${ult.pontosFortes.map(esc).join(" · ")}</p>` : ""}
+      ${ult.problemas.length ? `<details><summary class="peq"><b>⚠️ ${ult.problemas.length} problema(s) encontrados</b></summary>${ult.problemas.map((p) => `<div class="exemplo" style="margin:6px 0"><div class="c">${esc(p.conversa)}: "${esc(p.trecho)}"</div><div class="d">${esc(p.problema)}</div></div>`).join("")}</details>` : ""}
+      <h3 style="margin-top:12px">Melhorias sugeridas</h3>
+      ${ult.melhorias.length ? ult.melhorias.map(melhoria).join("") : `<p class="suave peq">Nenhuma melhoria nova desta vez. 👍</p>`}
+    </div>` : `<p class="suave peq" style="margin-bottom:0">Nenhuma inspeção ainda.</p>`}
+  </div>`;
+}
 // ---------------------------------------------------------------- Configurações
 TELAS.config = () => {
   const { marca, ia, loja, dono, google } = S.config;
@@ -2328,6 +2357,27 @@ async function importarConversas(arquivos) {
     toast(`${n} respostas suas importadas. Agora clique em "Estudar meu jeito de escrever".`, "ok");
   } }]);
 }
+ACOES.inspecionar = async (el) => {
+  el.disabled = true; el.textContent = "Inspecionando… (leva cerca de 1 minuto)";
+  try {
+    const insp = await N.inspecionar();
+    toast(`Inspeção pronta: nota ${insp.nota}/10, ${insp.melhorias.length} melhoria(s).`, "ok");
+  } catch (e) { toast(e.message, "erro"); }
+  render();
+};
+ACOES["aplicar-melhoria"] = (el) => {
+  const m = N.aplicarMelhoria(el.dataset.i, el.dataset.id);
+  if (m) toast("Melhoria aplicada: já vale na próxima resposta da IA.", "ok");
+  render();
+};
+ACOES["ignorar-melhoria"] = (el) => { N.ignorarMelhoria(el.dataset.i, el.dataset.id); render(); };
+ACOES["inspetor-auto"] = (el) => {
+  S.config.inspetor.auto = el.checked;
+  salvar("config");
+  toast(el.checked ? "Inspetor automático ligado: 1x por dia, com resumo no seu WhatsApp." : "Inspetor automático desligado.", "ok");
+  setTimeout(render, 0);
+};
+
 ACOES["estudar-estilo"] = async (el) => {
   const pares = S.estilo.pares;
   if (pares.length < 5) return;
