@@ -292,7 +292,7 @@ import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.7.0/+esm
 import {
   FUSO, uid, agoraISO, soDigitos, brl, semComentarios, MARCA_AUDIO, partesDoTexto, mesmoNumero,
   dataLocalISO, horaLocal, deLocal, paraLocal, hora, dataCurta, dataHora,
-  ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, CONDICOES, INSTRUCOES_EXEMPLO,
+  ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, QUEM_ATENDE, CONDICOES, INSTRUCOES_EXEMPLO,
   FONTE_SITE_PADRAO, FOTOS_MODELO_SITE, REGRAS_SITE, TROCAS_REGRAS, atualizarRegras,
   CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento, migrarConfig, semTagsDeVoz, telefoneCompleto,
 } from "./nucleo/negocio.js";
@@ -1347,6 +1347,7 @@ function telaChat(c) {
     <div class="avatar">${esc(iniciais(c.nome))}</div>
     <div class="quem"><b>${esc(nomeCli(c))}</b><span class="suave peq">${c.telefone ? `+${esc(c.telefone)}` : "sem número"}${c.interesse ? ` · ${esc(c.interesse)}` : ""}</span></div>
     <select data-a="mudar-modo" data-id="${c.id}" title="Quem responde nesta conversa (agora: ${esc(MODOS_GERAIS[modoEfetivo(c)])})">${Object.entries(MODOS).map(([k, v]) => `<option value="${k}" ${c.modo === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+    ${!c.teste && (c.iaLiberada || !N.iaPodeAtender(c)) ? `<button class="btn pq ${c.iaLiberada ? "" : "ok"}" data-a="liberar-ia" data-id="${c.id}" title="${c.iaLiberada ? "A IA está liberada para este cliente" : "Cliente fora da regra da IA (antigo ou não veio de anúncio): só você responde"}">${c.iaLiberada ? "🔒 Bloquear IA" : "🔓 Liberar IA"}</button>` : ""}
     <select data-a="mudar-estagio" data-id="${c.id}" title="Fase">${ESTAGIOS.map(([k, v]) => `<option value="${k}" ${c.estagio === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     <button class="btn pq" data-a="ficha" data-id="${c.id}">Ficha</button>
   </div>
@@ -1649,6 +1650,7 @@ function configSecoes() {
     <label class="campo"><span>Modelo</span><select id="c-ia-modelo">${[["claude-haiku-5-5", "Claude Haiku 5.5 (padrão: o mais barato, ~US$ 10/mês)"], ["claude-sonnet-5-5", "Claude Sonnet 5.5 (~US$ 100 a 175/mês)"], ["claude-opus-5-5", "Claude Opus 5.5 (o melhor, ~US$ 200 a 350/mês)"]].map(([v, t]) => `<option value="${v}" ${ia.modelo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     <label class="campo"><span>Esforço</span><select id="c-ia-esforco">${[["low", "Baixo: responde rápido (recomendado no chat)"], ["medium", "Médio: pensa mais"], ["high", "Alto: pensa bastante, mais lento"]].map(([v, t]) => `<option value="${v}" ${ia.esforco === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
     <label class="campo"><span>Durante o dia, quem responde <small>(o mesmo do botão em /modo)</small></span><select id="c-atendimento-modoDia">${Object.entries(MODOS_GERAIS).map(([k, v]) => `<option value="${k}" ${S.config.atendimento.modoDia === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+    <label class="campo"><span>Com quem a IA fala sozinha <small>(os outros clientes ficam com você; libere um cliente na conversa ou pelo WhatsApp: "libera o João")</small></span><select id="c-atendimento-quemAtende">${Object.entries(QUEM_ATENDE).map(([k, v]) => `<option value="${k}" ${(S.config.atendimento.quemAtende || "anuncio") === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
     <label class="linha campo" style="flex-direction:row;cursor:pointer"><input type="checkbox" id="c-atendimento-noiteAtiva" ${S.config.atendimento.noiteAtiva ? "checked" : ""}> À noite a IA responde sozinha</label>
     <label class="campo"><span>Noite começa às</span><input type="time" id="c-atendimento-noiteInicio" value="${esc(S.config.atendimento.noiteInicio)}"></label>
     <label class="campo"><span>Noite termina às</span><input type="time" id="c-atendimento-noiteFim" value="${esc(S.config.atendimento.noiteFim)}"></label>
@@ -2057,6 +2059,18 @@ ACOES["aprovar-valor"] = (el) => {
   responderAprovacao(el.dataset.id, "aprovada", v, comentario(el.dataset.id));
 };
 ACOES.recusar = (el) => responderAprovacao(el.dataset.id, "recusada", null, comentario(el.dataset.id));
+ACOES["liberar-ia"] = (el) => {
+  const c = contato(el.dataset.id);
+  if (!c) return;
+  c.iaLiberada = !c.iaLiberada;
+  if (c.iaLiberada) c.precisaDono = "";
+  evento(c.id, c.iaLiberada ? "🔓 Você liberou a IA para este cliente." : "🔒 Você bloqueou a IA para este cliente.");
+  salvar("contatos");
+  const ult = conversa(c.id).mensagens.filter((m) => m.de !== "evento").at(-1);
+  if (c.iaLiberada && ult?.de === "cliente") seguirConversa(c.id); // responde o que estava esperando
+  toast(c.iaLiberada ? "IA liberada para este cliente." : "IA bloqueada: só você responde este cliente.", "ok");
+  render();
+};
 ACOES.decidir = (el) => {
   const t = document.getElementById(`decisao-${el.dataset.id}`)?.value.trim();
   if (!t) return toast("Escreva o que a IA deve fazer.", "erro");

@@ -73,6 +73,8 @@ export const TIPOS = {
   reparo: "Reparo / deixar aparelho", visita: "Visita à loja", outro: "Outro",
 };
 export const MODOS = { geral: "🌐 Seguir o modo geral", auto: "🤖 IA responde sozinha", sugerir: "✍️ IA sugere, eu envio", manual: "🙋 Só eu respondo" };
+/** Com quem a IA fala sozinha (o resto fica com o dono, a não ser que ele libere o cliente). */
+export const QUEM_ATENDE = { anuncio: "Só clientes novos que chegam de anúncio", novos: "Todos os clientes novos", todos: "Todos os clientes (inclusive antigos)" };
 export const MODOS_GERAIS = { auto: "🤖 IA responde sozinha", sugerir: "✍️ IA sugere, eu aprovo", manual: "🙋 Eu respondo" };
 export const CONDICOES = ["Novo (lacrado)", "Seminovo", "Vitrine", "Recondicionado"];
 
@@ -199,7 +201,7 @@ export const CONFIG_PADRAO = {
   audio: { modo: "espelhar", maxSegundos: 25, jeito: JEITO_AUDIO_PADRAO },
   // Quem responde: à noite a IA responde sozinha; de dia, vale o modo escolhido no botão (/modo).
   // ativoDesde: a IA só responde mensagens que chegarem depois desta hora (marcada ao ligar o WhatsApp).
-  atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3, ativoDesde: null },
+  atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3, ativoDesde: null, quemAtende: "anuncio" },
   // Saudação com menu: na primeira mensagem e quando o cliente volta depois de alguns dias sem conversa.
   saudacao: { ativa: true, diasSemFalar: 5, texto: SAUDACAO_PADRAO },
   // Inspetor de vendas: lê as últimas conversas e sugere melhorias para a IA.
@@ -1210,6 +1212,7 @@ Escreva tudo em português do Brasil.`;
     if (!cfg?.ativa || !textoSaudacao()) return false;
     const c = contato(contatoId);
     if (c?.pausadoAte && new Date(c.pausadoAte) > agora) return false; // o dono está conversando
+    if (!iaPodeAtender(c)) return false; // cliente fora da regra: nada automático
     if (ehLeadAnuncio(c) && S.config.anuncio?.semMenu && !conversa(contatoId).mensagens.some((m) => m.de === "ia" || m.de === "dono")) return false; // anúncio: qualifica em vez do menu
     const ultima = conversa(contatoId).mensagens.filter((m) => m.de === "cliente" || m.de === "ia" || m.de === "dono").at(-1);
     if (!ultima) return true;
@@ -1234,8 +1237,23 @@ Escreva tudo em português do Brasil.`;
     return ini > fim ? min >= ini || min < fim : min >= ini && min < fim;
   }
   /** Quem responde esta conversa agora: "auto", "sugerir" ou "manual". */
+  /**
+   * A IA pode falar sozinha com este cliente? Regra "Quem a IA atende" (padrão: só clientes novos que
+   * chegam de anúncio). O dono libera um cliente (iaLiberada) ou escolhe o modo daquela conversa.
+   */
+  function iaPodeAtender(c) {
+    if (!c || c.teste || c.iaLiberada) return true;
+    if (c.modo && c.modo !== "geral" && MODOS[c.modo]) return c.modo !== "manual"; // o dono escolheu nesta conversa
+    const regra = S.config.atendimento?.quemAtende || "anuncio";
+    if (regra === "todos") return true;
+    const corte = S.config.atendimento?.ativoDesde;
+    const novo = c.origem !== "whatsapp-historico" && (!corte || String(c.criadoEm || "") >= corte);
+    if (!novo) return false;
+    return regra === "novos" || c.origemLead === "anuncio";
+  }
   function modoEfetivo(c, agora = new Date()) {
     if (c?.pausadoAte && new Date(c.pausadoAte) > agora) return "manual"; // o dono assumiu há pouco
+    if (c && !iaPodeAtender(c)) return "manual"; // cliente fora da regra: só o dono (ou ele libera)
     const proprio = c?.modo && c.modo !== "geral" && MODOS[c.modo] ? c.modo : null;
     if (noturno(agora)) return proprio === "manual" ? "manual" : "auto";
     return proprio || S.config.atendimento?.modoDia || "sugerir";
@@ -1395,6 +1413,7 @@ Escreva tudo em português do Brasil.`;
       { name: "novo_cliente", strict: true, description: "Cadastra um cliente novo pelo WhatsApp e já manda a primeira mensagem (a IA escreve do jeito da loja).", input_schema: obj({ nome: "string", telefone: "string", instrucao: "string" }, { telefone: "WhatsApp com DDD", instrucao: "O que a primeira mensagem deve dizer" }) },
       { name: "mudar_modo", strict: true, description: "Muda quem responde os clientes durante o dia: auto (a IA responde sozinha), sugerir (a IA sugere e o dono aprova no CRM) ou manual (só o dono responde). À noite a IA responde sozinha se o modo noturno estiver ligado.", input_schema: obj({ modo: { type: "string", enum: Object.keys(MODOS_GERAIS) } }) },
       { name: "atualizar_cliente", strict: true, description: "Muda o cartão de um cliente: fase do funil, temperatura, nota, e pausa ou retoma a IA naquela conversa.", input_schema: obj({ contato_id: "string", fase: { type: "string", enum: ["", ...ESTAGIOS.map((e) => e[0])] }, temperatura: { type: "string", enum: ["", ...Object.keys(TEMPERATURAS)] }, nota: "string", pausar_horas: "number" }, { pausar_horas: "Horas com a IA quieta nesta conversa; 0 = a IA volta a responder; -1 = não mexer" }) },
+      { name: "liberar_ia", strict: true, description: "Libera (ou bloqueia de novo) a IA para falar sozinha com um cliente que está fora da regra (cliente antigo, ou novo que não veio de anúncio). Liberado, a IA já responde o que estiver esperando.", input_schema: obj({ contato_id: "string", liberar: "boolean" }) },
       { name: "ensinar_ia", strict: true, description: "Guarda uma regra nova nas instruções da IA vendedora: preço, política, jeito de vender, produto que chegou ou acabou.", input_schema: obj({ regra: "string" }, { regra: "A regra, curta e clara, ex.: o iPhone 13 128GB seminovo agora é R$ 2.599" }) },
       { name: "ver_conversa", strict: true, description: "Mostra as últimas mensagens de uma conversa com cliente.", input_schema: obj({ contato_id: "string" }) },
     ];
@@ -1405,13 +1424,14 @@ Escreva tudo em português do Brasil.`;
     const ativos = S.contatos.filter((c) => !c.teste).sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm))).slice(0, 30).map((c) => {
       const ult = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1);
       const quem = ult ? { cliente: "cliente", ia: "IA", dono: "você" }[ult.de] || ult.de : "";
-      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}`;
+      return `${c.id} | ${nomeCli(c)} | ${c.telefone ? `+${c.telefone}` : c.zap || "-"} | ${NOME_ESTAGIO[c.estagio]} | ${c.temperatura || "-"} | ${c.interesse || "-"} | ${c.resumo || "-"}${ult ? ` | última: ${dataHora(ult.em)} ${quem}: "${cortar(ult.texto || "", 80)}"` : ""}${c.pausadoAte && new Date(c.pausadoAte) > agora ? " | IA pausada" : ""}${iaPodeAtender(c) ? "" : " | IA bloqueada (fora da regra)"}`;
     });
     const fim = new Date(agora.getTime() + 2 * 864e5);
     const comps = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= agora && deLocal(x.inicio) <= fim).map((x) => `${dataHora(deLocal(x.inicio).toISOString())} ${TIPOS[x.tipo]} com ${nomeCli(contato(x.contatoId))}`);
     const a = S.config.atendimento;
     return [
       `Agora: ${agora.toLocaleString("pt-BR", { timeZone: FUSO, weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} (Brasília).`,
+      `A IA fala sozinha com: ${QUEM_ATENDE[a.quemAtende || "anuncio"]}. Os outros ficam com o dono, a não ser que ele libere.`,
       `Quem responde os clientes agora: ${MODOS_GERAIS[modoEfetivo(null, agora)] || "-"}${noturno(agora) ? " (modo noturno)" : ""}. Modo do dia: ${MODOS_GERAIS[a.modoDia] || a.modoDia}. Modo noturno: ${a.noiteAtiva ? `das ${a.noiteInicio} às ${a.noiteFim}` : "desligado"}.`,
       pend.length ? `Pedidos esperando o dono:\n${pend.join("\n")}` : "Nenhum pedido esperando o dono.",
       `Clientes mais recentes (id | nome | WhatsApp | fase | temperatura | interesse | resumo | última mensagem):\n${ativos.join("\n") || "(nenhum)"}`,
@@ -1421,6 +1441,8 @@ Escreva tudo em português do Brasil.`;
   async function executarFerramentaDono(nome, ent, saida) {
     const cli = (id) => { const c = contato(id); if (!c) throw new Error(`Não achei o cliente ${id}.`); return c; };
     const ordem = (c, instrucao, primeira = false) => {
+      c.iaLiberada = true; // o dono mandou a IA falar com este cliente: ela pode continuar a conversa
+      salvar("contatos");
       conversa(c.id).notas.push(`ORDEM DO DONO (pelo WhatsApp dele): ${instrucao}.${primeira ? " Este cliente ainda não falou com a loja: a primeira mensagem é sua, curta, simpática e com o nome da loja." : ""} Faça isso agora nesta conversa, do jeito da loja, sem dizer que foi o dono que pediu.`);
       evento(c.id, `📲 Ordem do dono: ${instrucao}`);
       if (!saida.acionar.includes(c.id)) saida.acionar.push(c.id);
@@ -1474,6 +1496,16 @@ Escreva tudo em português do Brasil.`;
         salvar("contatos");
         return { ok: true, cliente: nomeCli(c), feito };
       }
+      case "liberar_ia": {
+        const c = cli(ent.contato_id);
+        c.iaLiberada = Boolean(ent.liberar);
+        if (c.iaLiberada) c.precisaDono = "";
+        evento(c.id, c.iaLiberada ? "🔓 O dono liberou a IA para este cliente." : "🔒 O dono bloqueou a IA para este cliente.");
+        salvar("contatos");
+        const esperando = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1)?.de === "cliente";
+        if (c.iaLiberada && esperando && !saida.seguir.includes(c.id)) saida.seguir.push(c.id);
+        return { ok: true, cliente: nomeCli(c), ia: c.iaLiberada ? "liberada" : "bloqueada", vaiResponderAgora: c.iaLiberada && esperando };
+      }
       case "ensinar_ia": {
         const regra = String(ent.regra || "").trim();
         if (!regra) return { erro: "Regra vazia." };
@@ -1516,6 +1548,7 @@ Escreva tudo em português do Brasil.`;
 - Para falar com um cliente, use mandar_para_cliente com uma instrução para a IA vendedora (ela escreve do jeito da loja). Use texto_exato só se ele ditou a mensagem palavra por palavra.
 - Se não der para saber qual cliente é, pergunte, mostrando 2 ou 3 opções com nome e final do telefone. Não chute.
 - Mudança de preço, produto que chegou ou acabou, política ou jeito de vender: ensinar_ia.
+- A IA só fala sozinha com clientes novos que chegam de anúncio (regra da loja). Se ele pedir para a IA atender um cliente antigo ou fora da regra ("libera o João", "pode atender a Ana"), use liberar_ia.
 - Use só o que está no contexto e nas ferramentas. Não invente cliente, preço nem conversa.
 - Responda curto, como um braço direito de confiança no WhatsApp: diga em uma ou duas linhas o que você fez, ou responda a pergunta dele. Se não deu para fazer, diga por quê. Sem markdown além de *negrito*.`;
     const mensagens = [{ role: "user", content: [{ type: "text", text: `${contextoDono()}\n\n${historico ? `# Conversa recente com o dono\n${historico}\n\n` : ""}# Mensagem nova do dono\n${t}` }] }];
@@ -1583,6 +1616,6 @@ Escreva tudo em português do Brasil.`;
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
+    noturno, modoEfetivo, iaPodeAtender, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
   };
 }
