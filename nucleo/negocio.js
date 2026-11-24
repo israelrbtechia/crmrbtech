@@ -166,16 +166,24 @@ export function fraseDeAnuncio(texto, frases = FRASES_ANUNCIO_PADRAO) {
  */
 export function migrarConfig(cfg) {
   const v = Number(cfg?.ia?.regrasVersao) || 1;
-  if (v >= 5) return false;
+  if (v >= 6) return false;
+  if (v === 5) {
+    // Versão 6: sem hora de início marcada, ela passa a ser agora. O que veio antes vira só histórico
+    // (nem resposta nem follow-up), até o cliente escrever de novo.
+    if (cfg.atendimento && !cfg.atendimento.ativoDesde) cfg.atendimento.ativoDesde = new Date(Date.now() - 2 * 60e3).toISOString(); // folga: a mensagem que chegou agora vale
+    cfg.ia.regrasVersao = 6;
+    return true;
+  }
   cfg.ia.instrucoes = atualizarRegras(cfg.ia.instrucoes);
   if (v < 2) cfg.loja.pagamento = String(cfg.loja.pagamento || "").replace(/\s*Não fazemos boleto\.?\s*$/i, "");
   if (!String(cfg.ia.instrucoes).includes("# Carregadores e cabos")) cfg.ia.instrucoes = `${String(cfg.ia.instrucoes || "").trimEnd()}\n\n${BLOCO_CARREGADORES}`;
-  cfg.ia.regrasVersao = 5;
+  if (cfg.atendimento && !cfg.atendimento.ativoDesde) cfg.atendimento.ativoDesde = new Date(Date.now() - 2 * 60e3).toISOString(); // folga: a mensagem que chegou agora vale
+  cfg.ia.regrasVersao = 6;
   return true;
 }
 export const CONFIG_PADRAO = {
   marca: { nome: "RBTech", complemento: "Celulares", nomeIA: "Assistente RBTech", cor: "#ffd60a", logo: "" },
-  ia: { regrasVersao: 5, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
+  ia: { regrasVersao: 6, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
   loja: { site: "", endereco: "", cidade: "Florianópolis - SC", horario: "Segunda a sexta, 9h às 18h. Sábado, 9h às 13h.", pagamento: "Pix, cartão de crédito em até 12x, dinheiro.", garantia: "", sobre: "", duracao: 30 },
   dono: { nome: "", whatsapp: "" },
   google: { clientId: "", calendarId: "primary" },
@@ -981,6 +989,11 @@ export function criarNucleo(S, ctx = {}) {
     const ult = msgs[msgs.length - 1];
     if (!ult) return { situacao: "nenhum" };
     const dias = (agora - new Date(ult.em)) / 86400000;
+    // Só faz follow-up em conversa que o cliente começou com a loja depois que a IA foi ligada.
+    // Histórico sincronizado (ou de antes da hora de início) nunca é "reativado" sozinho.
+    const corte = S.config.atendimento?.ativoDesde;
+    const conversouDepois = msgs.some((m) => m.de === "cliente" && !m.historico && (!corte || m.em >= corte));
+    if (!conversouDepois || ult.historico) return { situacao: "nenhum", dias };
     if (ult.de === "cliente") return { situacao: "cliente-esperando", dias };
     if (!f.ativo || !f.estagios.includes(c.estagio) || c.fu?.pausado) return { situacao: "nenhum", dias };
     if (S.aprovacoes.some((a) => a.contatoId === c.id && a.status === "pendente")) return { situacao: "aguardando-voce", dias };
