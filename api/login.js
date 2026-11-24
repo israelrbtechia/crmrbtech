@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { ambiente, entrarNoSupabase } from "../lib/ambiente.js";
 
 /**
  * Login do CRM com usuário e senha das variáveis CRM_USUARIO e CRM_SENHA.
@@ -14,18 +15,12 @@ const hash = (s) => createHash("sha256").update(String(s), "utf8").digest();
 const iguais = (a, b) => timingSafeEqual(hash(a), hash(b));
 const resposta = (status, corpo) => Response.json(corpo, { status, headers: { "cache-control": "no-store" } });
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
+const NECESSARIAS = ["CRM_USUARIO", "CRM_SENHA", "SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_EMAIL", "SUPABASE_SENHA"];
 
 export async function POST(request) {
-  const env = {
-    CRM_USUARIO: process.env.CRM_USUARIO?.trim(),
-    CRM_SENHA: process.env.CRM_SENHA,
-    SUPABASE_URL: process.env.SUPABASE_URL?.trim().replace(/\/+$/, ""),
-    SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY?.trim(),
-    SUPABASE_EMAIL: process.env.SUPABASE_EMAIL?.trim(),
-    SUPABASE_SENHA: process.env.SUPABASE_SENHA,
-  };
-  const faltando = Object.entries(env).filter(([, v]) => !v).map(([k]) => k);
-  if (faltando.length) return resposta(500, { erro: `Faltam variáveis de ambiente na Vercel: ${faltando.join(", ")}.` });
+  const env = ambiente();
+  const faltando = NECESSARIAS.filter((n) => !env[n]);
+  if (faltando.length) return resposta(500, { erro: `Faltam variáveis de ambiente na Vercel: ${faltando.join(", ")}. Depois de cadastrar, faça Redeploy.` });
 
   const ip = (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "desconhecido";
   const t = tentativas.get(ip) || { falhas: 0, bloqueadoAte: 0 };
@@ -35,8 +30,9 @@ export async function POST(request) {
 
   let corpo;
   try { corpo = await request.json(); } catch { corpo = {}; }
-  const certo = iguais(String(corpo.usuario || "").trim().toLowerCase(), env.CRM_USUARIO.toLowerCase()) & iguais(String(corpo.senha || ""), env.CRM_SENHA);
-  if (!certo) {
+  const usuarioCerto = iguais(String(corpo.usuario || "").trim().toLowerCase(), env.CRM_USUARIO.toLowerCase());
+  const senhaCerta = iguais(String(corpo.senha || "").trim(), env.CRM_SENHA);
+  if (!(usuarioCerto && senhaCerta)) {
     t.falhas += 1;
     if (t.falhas >= MAX_FALHAS) { t.falhas = 0; t.bloqueadoAte = Date.now() + BLOQUEIO_MS; }
     tentativas.set(ip, t);
@@ -46,14 +42,8 @@ export async function POST(request) {
   }
   tentativas.delete(ip);
 
-  const r = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, "content-type": "application/json" },
-    body: JSON.stringify({ email: env.SUPABASE_EMAIL, password: env.SUPABASE_SENHA }),
-  });
-  if (!r.ok) {
-    return resposta(500, { erro: "O usuário do Supabase (SUPABASE_EMAIL e SUPABASE_SENHA) não conseguiu entrar. Confira em Supabase > Authentication > Users." });
-  }
-  const s = await r.json();
-  return resposta(200, { access_token: s.access_token, refresh_token: s.refresh_token, expires_in: s.expires_in, expires_at: s.expires_at, token_type: s.token_type });
+  const s = await entrarNoSupabase(env);
+  if (!s.ok) return resposta(500, { erro: s.erro });
+  const { access_token, refresh_token, expires_in, expires_at, token_type } = s.sessao;
+  return resposta(200, { access_token, refresh_token, expires_in, expires_at, token_type });
 }

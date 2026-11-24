@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { usuarioDoCrm } from "../lib/auth.js";
+import { ambiente } from "../lib/ambiente.js";
 
 /**
  * Intermediário entre o CRM e a Anthropic. O navegador manda o pedido da IA
@@ -10,7 +11,7 @@ import { usuarioDoCrm } from "../lib/auth.js";
 const erro = (status, tipo, mensagem) => Response.json({ type: "error", error: { type: tipo, message: mensagem } }, { status });
 
 export async function POST(request) {
-  const chave = process.env.ANTHROPIC_API_KEY?.trim();
+  const chave = ambiente().ANTHROPIC_API_KEY;
   if (!chave) return erro(500, "api_error", "ANTHROPIC_API_KEY não está configurada na Vercel.");
 
   const acesso = await usuarioDoCrm(request);

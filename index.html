@@ -1969,6 +1969,7 @@ TELAS.login = () => `
     <button class="btn prim" data-a="entrar" style="width:100%;justify-content:center;margin-top:14px">Entrar</button>
     ${NUVEM.erro ? `<p class="erro-txt peq">${esc(NUVEM.erro)}</p>` : ""}
     ${SERVIDOR.login ? "" : `<p class="suave peq" style="text-align:center">O acesso é criado pelo dono no Supabase (Authentication &gt; Users).</p>`}
+    <button class="btn pq" data-a="diagnostico" style="width:100%;justify-content:center;margin-top:10px">🔍 Verificar configuração</button>
   </div></div>`;
 const DEPOIS = {};
 
@@ -2371,7 +2372,8 @@ TELAS.config = () => {
   <div class="cartao">${NUVEM.usuario ? `
     <p class="aviso info" style="margin-top:0">☁️ Você entrou${SERVIDOR.login ? "" : ` como <b>${esc(NUVEM.usuario.email || "")}</b>`}. Clientes, conversas, funil, aprovações, agenda, catálogo, configurações e o seu jeito de escrever ficam salvos no Supabase e aparecem em qualquer computador ou celular.${NUVEM.salvoEm ? ` Último envio: ${hora(NUVEM.salvoEm)}.` : ""}${NUVEM.erro ? `<br><b class="erro-txt">Erro: ${esc(NUVEM.erro)}</b>` : ""}</p>
     <div class="linha"><button class="btn" data-a="nuvem-sincronizar">🔄 Sincronizar agora</button><button class="btn perigo" data-a="nuvem-sair">Sair</button></div>` : `
-    <p class="aviso" style="margin-top:0">A nuvem e o login ainda não estão ligados: faltam as variáveis de ambiente na Vercel${SERVIDOR.faltando?.length ? ` (${esc(SERVIDOR.faltando.join(", "))})` : ""}. Enquanto isso, os dados ficam só neste navegador.</p>`}
+    <p class="aviso" style="margin-top:0">A nuvem e o login ainda não estão ligados: faltam as variáveis de ambiente na Vercel${SERVIDOR.faltando?.length ? ` (${esc(SERVIDOR.faltando.join(", "))})` : ""}. Enquanto isso, os dados ficam só neste navegador.</p>
+    <button class="btn" data-a="diagnostico">🔍 Verificar configuração</button>`}
   </div>
   ${chavesAntigas().length ? `
   <h2>Chaves antigas deste navegador</h2>
@@ -2803,6 +2805,21 @@ ACOES["cat-colar"] = () => {
       toast(`${add} itens novos, ${atu} atualizados. Confira os valores na tabela.`, "ok");
     } catch (e) { fecharModal(); toast(e.message, "erro"); }
   } }]);
+};
+
+// Diagnóstico da configuração (Vercel + Supabase), sem mostrar senhas
+ACOES.diagnostico = async (el) => {
+  if (el) { el.disabled = true; el.dataset.t = el.textContent; el.textContent = "Verificando…"; }
+  try {
+    const r = await fetch("/api/diagnostico", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 404 ? "A verificação não existe neste endereço: o app está publicado na Vercel com a versão nova?" : `erro ${r.status}`);
+    const d = await r.json();
+    abrirModal(d.tudoOk ? "✅ Configuração certa" : "Configuração: o que precisa arrumar", `
+      <div class="lista">${d.itens.map((i) => `<div class="check"><i>${i.ok ? "✅" : "❌"}</i><div class="espaco"><b>${esc(i.nome)}</b><div class="suave peq">${esc(i.detalhe)}</div></div></div>`).join("")}</div>
+      <p class="suave peq">Arrumou alguma variável na Vercel? Ela só vale depois de <b>Deployments &gt; ⋯ &gt; Redeploy</b>. Se a senha do CRM não entra, confira em CRM_USUARIO e CRM_SENHA se não sobrou espaço no começo ou no fim.</p>`,
+    [{ texto: "Fechar", acao: fecharModal }]);
+  } catch (e) { toast(`Não consegui verificar: ${e.message}`, "erro"); }
+  if (el) { el.disabled = false; el.textContent = el.dataset.t; }
 };
 
 // Chaves antigas

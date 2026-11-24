@@ -1,4 +1,5 @@
 import { usuarioDoCrm } from "../lib/auth.js";
+import { ambiente } from "../lib/ambiente.js";
 
 /**
  * Texto -> áudio com a voz clonada do dono (ElevenLabs).
@@ -7,8 +8,9 @@ import { usuarioDoCrm } from "../lib/auth.js";
 const erro = (status, mensagem) => Response.json({ erro: mensagem }, { status, headers: { "cache-control": "no-store" } });
 
 export async function POST(request) {
-  const chave = process.env.ELEVENLABS_API_KEY?.trim();
-  const voz = process.env.ELEVENLABS_VOICE_ID?.trim();
+  const env = ambiente();
+  const chave = env.ELEVENLABS_API_KEY;
+  const voz = env.ELEVENLABS_VOICE_ID;
   if (!chave || !voz) return erro(500, "Faltam ELEVENLABS_API_KEY e ELEVENLABS_VOICE_ID na Vercel.");
 
   const acesso = await usuarioDoCrm(request);
@@ -24,7 +26,7 @@ export async function POST(request) {
     headers: { "xi-api-key": chave, "content-type": "application/json", accept: "audio/mpeg" },
     body: JSON.stringify({
       text: fala,
-      model_id: process.env.ELEVENLABS_MODEL?.trim() || "eleven_multilingual_v2",
+      model_id: env.ELEVENLABS_MODEL || "eleven_multilingual_v2",
       voice_settings: { stability: 0.45, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true },
     }),
   });

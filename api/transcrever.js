@@ -1,4 +1,5 @@
 import { usuarioDoCrm } from "../lib/auth.js";
+import { ambiente } from "../lib/ambiente.js";
 
 /**
  * Áudio do cliente -> texto (ElevenLabs Speech to Text), para a IA entender.
@@ -8,7 +9,8 @@ const erro = (status, mensagem) => Response.json({ erro: mensagem }, { status, h
 const EXTENSOES = { "audio/webm": "webm", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/aac": "aac" };
 
 export async function POST(request) {
-  const chave = process.env.ELEVENLABS_API_KEY?.trim();
+  const env = ambiente();
+  const chave = env.ELEVENLABS_API_KEY;
   if (!chave) return erro(500, "Falta ELEVENLABS_API_KEY na Vercel.");
 
   const acesso = await usuarioDoCrm(request);
@@ -20,7 +22,7 @@ export async function POST(request) {
   if (dados.byteLength > 4 * 1024 * 1024) return erro(413, "Áudio grande demais (máximo 4 MB).");
 
   const form = new FormData();
-  form.append("model_id", process.env.ELEVENLABS_STT_MODEL?.trim() || "scribe_v2");
+  form.append("model_id", env.ELEVENLABS_STT_MODEL || "scribe_v2");
   form.append("language_code", "pt");
   form.append("file", new Blob([dados], { type: tipo }), `audio.${EXTENSOES[tipo] || "webm"}`);
 
