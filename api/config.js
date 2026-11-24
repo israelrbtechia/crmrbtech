@@ -17,6 +17,8 @@ export function GET() {
       supabaseUrl: login ? supabaseUrl : "",
       supabaseChave: login ? supabaseChave : "",
       googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() || "",
+      // Voz clonada (ElevenLabs): só com login, como a IA.
+      voz: tem("ELEVENLABS_API_KEY") && tem("ELEVENLABS_VOICE_ID") && login,
       faltando: NECESSARIAS.filter((n) => !tem(n)),
     },
     { headers: { "cache-control": "no-store" } },

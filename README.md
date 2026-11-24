@@ -1,4 +1,7 @@
-# CRM RBTech com IA
+# CRMY: CRM com IA
+
+![CRMY](marca/crmy-logo.png)
+
 
 CRM da RBTech Celulares com uma IA (Claude, da Anthropic) que atende clientes, vende iPhones pelo catálogo, marca compromissos e aprende o jeito do dono de escrever. É um app de um arquivo só (`index.html`), sem servidor e sem build.
 
@@ -17,6 +20,14 @@ CRM da RBTech Celulares com uma IA (Claude, da Anthropic) que atende clientes, v
 
 O modelo padrão é o **Claude Haiku 5.5**, o mais barato: para 20 a 25 clientes por dia, fica em torno de **US$ 5 a 10 por mês**. Em Configurações > Inteligência artificial dá para trocar pelo Sonnet 5.5 (cerca de US$ 100 a 175 por mês) ou pelo Opus 5.5 (cerca de US$ 200 a 350 por mês), que negociam melhor. O Painel mostra o gasto estimado do mês.
 
+## Resposta em áudio (rapport)
+
+Com `ELEVENLABS_API_KEY` e `ELEVENLABS_VOICE_ID`, quando o cliente manda áudio a IA responde com um áudio curto **na voz clonada do dono** (cumprimenta, mostra que entendeu, cria conexão) e manda preços e parcelas em texto logo depois. Os áudios dos clientes são transcritos (`api/transcrever.js`, ElevenLabs Speech to Text) e a fala é gerada em `api/voz.js`. Em **Configurações > Voz e áudio** dá para escolher quando responder em áudio e ouvir um teste da voz.
+
+## Marca CRMY
+
+Logos em [`marca/`](marca/): `crmy-logo.svg` (fundo escuro), `crmy-logo-fundo-claro.svg`, `crmy-icone.svg` e as versões em PNG.
+
 ## Publicar na Vercel
 
 1. Em [vercel.com](https://vercel.com) > **Add New > Project**, importe este repositório.
@@ -33,6 +44,9 @@ O modelo padrão é o **Claude Haiku 5.5**, o mais barato: para 20 a 25 clientes
 | `SUPABASE_EMAIL` | E-mail do usuário criado no Supabase (Authentication > Users) |
 | `SUPABASE_SENHA` | Senha desse usuário do Supabase. Marque como **Sensitive**. |
 | `GOOGLE_CLIENT_ID` | Client ID do Google Agenda (opcional) |
+| `ELEVENLABS_API_KEY` | Chave da API da ElevenLabs, para a IA responder em áudio com a sua voz (opcional). Marque como **Sensitive**. |
+| `ELEVENLABS_VOICE_ID` | ID da voz clonada na ElevenLabs (opcional) |
+| `ELEVENLABS_MODEL` | Modelo da fala (opcional; padrão `eleven_multilingual_v2`) |
 
 4. Clique em **Deploy** (ou, se o projeto já existia, **Deployments > ⋯ > Redeploy**, porque variável nova só vale depois de publicar de novo).
 
