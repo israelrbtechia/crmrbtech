@@ -9,7 +9,8 @@ CRM da RBTech Celulares com uma IA (Claude, da Anthropic) que atende clientes, v
 - **Follow-up:** quando o cliente para de responder, a IA manda uma mensagem para retomar a conversa, nos dias que você escolher (ex.: 1, 3 e 7 dias), só no horário permitido. Sem resposta depois da última tentativa, o cartão vai para Perdido; se o cliente voltar a falar, volta sozinho para o funil.
 - **Aprovação antes de vender:** antes de fechar qualquer venda, a IA pergunta ao dono se tem em estoque e se o valor está certo.
 - **Agenda:** retiradas, entregas de iPhone, orçamentos e reparos, com Google Agenda opcional.
-- **Catálogo de iPhones** e **aprendizado do estilo do dono** a partir de conversas exportadas do WhatsApp.
+- **Dados do site da loja:** o CRM importa tudo do site (repositório `rb-tech-celulares`, arquivo `data/catalogo.json`): aparelhos com preço, foto, cor, bateria e garantia, taxas de cada parcela do cartão (até 24x), tabela de troca do usado, cupons, campanhas, políticas, benefícios e reparos. A IA calcula parcelas e avaliação do usado com as mesmas contas do site, e se atualiza sozinha quando o admin do site publica uma mudança.
+- **Aprendizado do estilo do dono** a partir de conversas exportadas do WhatsApp.
 - **Marca personalizável** (nome, logo, cor) e pacote de configuração para revender a outras lojas.
 
 ## Custo da IA
