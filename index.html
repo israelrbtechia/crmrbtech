@@ -1061,7 +1061,8 @@ async function atenderNoServidor(contatoId, { rascunho = false, enviar = false }
 function responderAprovacao(id, decisao, valorFinal = null, comentario = "") {
   const a = N.aplicarAprovacao(id, decisao, valorFinal, comentario);
   if (!a) return;
-  seguirConversa(a.contatoId);
+  if (a.tipo === "desconto") rodarAgente(a.contatoId, { enviar: true }); // desconto: o cliente recebe a resposta na hora
+  else seguirConversa(a.contatoId);
   atualizarTela();
 }
 /** Depois de uma aprovação: a IA continua a conversa (sugere, se estiver em "só eu"). */
@@ -1456,6 +1457,16 @@ TELAS.aprovacoes = () => {
   const hist = S.aprovacoes.filter((a) => a.status !== "pendente").slice(-20).reverse();
   const cartao = (a) => {
     const c = contato(a.contatoId);
+    if (a.tipo === "desconto") return `<div class="cartao cartao-aprov ${a.status}">
+      <div class="linha"><b>💸 #${a.codigo} · Desconto · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm"}">${a.status === "pendente" ? "decidir" : a.status === "aprovada" ? "liberado" : "negado"}</span></div>
+      <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · 💰 de ${brl(a.valorAtual)} para <b>${brl(a.valor)}</b>${a.pagamento ? ` · ${esc(a.pagamento)}` : ""}<br>📝 ${esc(a.resumo || "-")}${a.valorFinal ? `<br>Liberado por: <b>${brl(a.valorFinal)}</b>` : ""} · o cliente não foi avisado do pedido</div>
+      ${a.status === "pendente" ? `<div class="linha">
+        <button class="btn ok" data-a="aprovar" data-id="${a.id}">✅ Liberar ${brl(a.valor)}</button>
+        <input type="number" id="valor-${a.id}" data-manter placeholder="Outro valor (R$)" style="width:150px">
+        <button class="btn" data-a="aprovar-valor" data-id="${a.id}">Liberar com este valor</button>
+        <button class="btn perigo" data-a="recusar" data-id="${a.id}">⛔ Não dar desconto</button>
+      </div>` : ""}
+    </div>`;
     if (a.tipo === "decisao") return `<div class="cartao cartao-aprov ${a.status === "pendente" ? "pendente" : "aprovada"}">
       <div class="linha"><b>🤔 #${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : "vd"}">${a.status === "pendente" ? "decidir" : "decidida"}</span></div>
       <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · ⚠️ ${esc(a.situacao)}${a.temos ? `<br>📦 Temos: ${esc(a.temos)}` : ""}${a.sugestao ? `<br>💡 Sugestão da IA: ${esc(a.sugestao)}` : ""}${a.resumo ? `<br>📝 ${esc(a.resumo)}` : ""}${a.comentario ? `<br>Você decidiu: <b>${esc(a.comentario)}</b>` : ""}</div>

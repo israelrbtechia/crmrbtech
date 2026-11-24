@@ -596,6 +596,7 @@ export function criarNucleo(S, ctx = {}) {
   11. Reparo e assistência técnica: não fale de pagamento (formas, parcelas, Pix, desconto à vista) antes de o cliente aprovar o orçamento ou a OS. Se ele perguntar antes, responda curto.
   12. iPhone de entrada (troca): depois de avaliar o usado, ANTES de falar qualquer valor, pergunte se ele prefere pagar a diferença à vista ou parcelado. Conforme a resposta, passe só esse valor: à vista, só o valor à vista da diferença; parcelado, só a simulação parcelada (nas vezes que ele pediu; se não disse, simule em 12x e diga que dá para ajustar).
   13. Modelo, cor ou armazenamento que o cliente pediu e que não está no catálogo ou está sem estoque (inclusive Xiaomi e acessórios que não estão no catálogo nem nas instruções do dono): não diga logo que não tem. Use pedir_decisao_dono, com o que há de mais parecido no catálogo e a sua sugestão, e diga ao cliente que vai verificar e já retorna; pode mostrar a opção mais próxima, sem prometer. Quando a decisão chegar (mensagem de sistema), siga o que o dono decidiu.
+  14. Pedido de desconto ("faz por menos?", "tem desconto?", "consegue melhorar?", "à vista sai quanto?" depois de já ter o valor): use pedir_desconto_dono com o valor que você sugere (um desconto pequeno que feche a venda) e não responda nada ao cliente nessa vez. Quando o dono liberar, responda na hora, animado ("Olá, consigo sim um descontinho pra ti!"), com o valor novo, e conduza para fechar. Se ele negar, segure o preço com valor, sem dizer que consultou alguém.
 
   # Formato da resposta
   Escreva só o texto que vai para o cliente, pronto para o WhatsApp. Mensagens curtas, como gente de verdade escreve. Para mandar mais de uma mensagem separada, ponha uma linha só com --- entre elas. Pode usar *negrito* do WhatsApp com moderação; nada de títulos ou listas longas.
@@ -618,7 +619,7 @@ export function criarNucleo(S, ctx = {}) {
   function notaDeSistema(c, notas, { pedirAudio = false, veioAudio = false } = {}) {
     const agora = new Date();
     const quando = agora.toLocaleString("pt-BR", { timeZone: FUSO, weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    const aprov = S.aprovacoes.filter((a) => a.contatoId === c.id).slice(-5).map((a) => a.tipo === "decisao" ? `#${a.codigo} decisão sobre ${a.produto} (${a.situacao}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não decidiu)" : `o dono decidiu: "${a.comentario}"`}` : `#${a.codigo} ${a.produto} por ${a.valor ? brl(a.valor) : "valor a definir"}: ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu)" : a.status === "aprovada" ? `APROVADA${a.valorFinal ? ` (valor final ${brl(a.valorFinal)})` : ""}` : a.status === "cancelada" ? "CANCELADA pelo dono (venda desfeita)" : "RECUSADA"}${a.comentario ? `. Dono disse: "${a.comentario}"` : ""}`);
+    const aprov = S.aprovacoes.filter((a) => a.contatoId === c.id).slice(-5).map((a) => a.tipo === "desconto" ? `#${a.codigo} desconto em ${a.produto} (de ${brl(a.valorAtual)} para ${brl(a.valor)}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu: não fale de desconto com o cliente)" : a.status === "aprovada" ? `LIBERADO por ${brl(a.valorFinal)}` : "NÃO LIBERADO"}` : a.tipo === "decisao" ? `#${a.codigo} decisão sobre ${a.produto} (${a.situacao}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não decidiu)" : `o dono decidiu: "${a.comentario}"`}` : `#${a.codigo} ${a.produto} por ${a.valor ? brl(a.valor) : "valor a definir"}: ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu)" : a.status === "aprovada" ? `APROVADA${a.valorFinal ? ` (valor final ${brl(a.valorFinal)})` : ""}` : a.status === "cancelada" ? "CANCELADA pelo dono (venda desfeita)" : "RECUSADA"}${a.comentario ? `. Dono disse: "${a.comentario}"` : ""}`);
     const comps = S.compromissos.filter((x) => x.contatoId === c.id && x.status !== "cancelado").map((x) => `${x.id}: ${TIPOS[x.tipo]} em ${dataHora(x.inicio)}${x.status === "feito" ? " (já aconteceu)" : ""}`);
     return [
       `Agora: ${quando} (horário de Brasília).`,
@@ -664,6 +665,14 @@ export function criarNucleo(S, ctx = {}) {
         input_schema: obj(
           { id_catalogo: "string", produto: "string", valor: "number", forma_pagamento: "string", entrega: "string", resumo: "string" },
           { id_catalogo: "id do item no catálogo (ex.: P012), ou vazio se não está no catálogo", produto: "Modelo, armazenamento, cor e condição", valor: "Valor que você passou ao cliente, em reais. Use 0 se o item não tem preço e o dono precisa informar.", forma_pagamento: "Pix, cartão em Nx, etc., ou 'a combinar'", entrega: "Retirada na loja, entrega (com bairro) ou a combinar", resumo: "Uma ou duas linhas sobre a negociação, para o dono" },
+        ),
+      },
+      {
+        name: "pedir_desconto_dono", strict: true,
+        description: "O cliente pediu desconto (\"faz por menos?\", \"tem desconto?\", \"consegue melhorar?\"). Manda no WhatsApp do dono o pedido de desconto com o valor que você sugere. Use direto e NÃO responda nada ao cliente nesta vez: nem que vai consultar, nem que vai ver. A resposta do dono chega depois, como mensagem de sistema.",
+        input_schema: obj(
+          { id_catalogo: "string", produto: "string", valor_atual: "number", valor_sugerido: "number", forma_pagamento: "string", resumo: "string" },
+          { id_catalogo: "id do item no catálogo, ou vazio", produto: "Modelo, armazenamento, cor e condição", valor_atual: "Preço que o cliente já recebeu, em reais", valor_sugerido: "Quanto ficaria com o desconto que você sugere (um desconto pequeno, que feche a venda)", forma_pagamento: "Pix, cartão em Nx, etc., ou 'a combinar'", resumo: "Uma linha sobre o cliente e a negociação, para o dono" },
         ),
       },
       {
@@ -780,8 +789,26 @@ export function criarNucleo(S, ctx = {}) {
         notificar("Decisão para tomar", `${nomeCli(c)}: ${a.produto} (${a.situacao})`);
         return { status: "pendente", codigo: a.codigo, instrucao: "Decisão enviada. Diga ao cliente, do seu jeito, que vai verificar a disponibilidade e já retorna (sem citar o dono). Pode mostrar a opção mais próxima do catálogo, sem prometer." };
       }
+      case "pedir_desconto_dono": {
+        conversa(contatoId).silenciar = true; // o cliente não fica sabendo: nada sai nesta rodada
+        const pendente = S.aprovacoes.find((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo === "desconto");
+        if (pendente) return { status: "pendente", codigo: pendente.codigo, aviso: "Já existe um pedido de desconto esperando o dono. Não responda nada ao cliente agora." };
+        S.seq.aprov = (S.seq.aprov || 0) + 1;
+        const a = {
+          id: uid("a"), tipo: "desconto", codigo: `A${S.seq.aprov}`, contatoId, idCatalogo: ent.id_catalogo || "", produto: ent.produto,
+          valorAtual: Number(ent.valor_atual) || 0, valor: Number(ent.valor_sugerido) || 0, pagamento: ent.forma_pagamento, resumo: ent.resumo, status: "pendente", criadaEm: agoraISO(),
+        };
+        S.aprovacoes.push(a);
+        c.proximoPasso = `Desconto #${a.codigo} esperando o dono`;
+        const texto = `💸 *Desconto* #${a.codigo}\n\n👤 ${nomeCli(c)}${c.telefone ? ` (+${c.telefone})` : ""}\n📱 ${a.produto}\n💰 Preço atual: ${a.valorAtual ? brl(a.valorAtual) : "-"}${a.pagamento ? ` · ${a.pagamento}` : ""}\n🏷️ O cliente pediu desconto.${a.valor ? ` Sugestão: *${brl(a.valor)}*` : ""}\n📝 ${a.resumo || "-"}\n\nLibero? Responda *SIM*${a.valor ? ` (fica ${brl(a.valor)})` : ""}, *SIM 3850* (outro valor) ou *NÃO*. O cliente não foi avisado.`;
+        mensagemAoDono(texto, a.id);
+        evento(contatoId, `💸 IA pediu desconto ao dono: ${a.produto} de ${brl(a.valorAtual)} para ${brl(a.valor)} (#${a.codigo})`);
+        salvar("aprovacoes", "seq", "contatos");
+        notificar("Pedido de desconto", `${nomeCli(c)}: ${a.produto} ${brl(a.valor)}`);
+        return { status: "pendente", codigo: a.codigo, instrucao: "Pedido enviado ao dono. NÃO responda nada ao cliente agora (sua resposta desta vez não será enviada). Quando o dono responder, você fala com o cliente." };
+      }
       case "pedir_aprovacao_dono": {
-        const pendente = S.aprovacoes.find((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo !== "decisao");
+        const pendente = S.aprovacoes.find((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo !== "decisao" && a.tipo !== "desconto");
         if (pendente) return { status: "pendente", codigo: pendente.codigo, aviso: "Já existe um pedido de aprovação esperando o dono. Aguarde a resposta dele." };
         S.seq.aprov = (S.seq.aprov || 0) + 1;
         const a = {
@@ -1321,11 +1348,17 @@ Escreva tudo em português do Brasil.`;
         }
         novas.forEach((m) => (m.naIA = true));
         conv.notas = conv.notas.filter((n) => !notas.includes(n));
+        if (conv.silenciar) {
+          // Pediu desconto ao dono: o cliente não é avisado; a resposta vem quando o dono decidir.
+          delete conv.silenciar;
+          return { texto: "", silencio: true };
+        }
         const texto = final.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
         return { texto };
       }
     } catch (e) {
       conv.api.length = tamanhoAntes;
+      delete conv.silenciar;
       evento(contatoId, `⚠️ ${e.message}`, { erro: true });
       registrar(`Erro na conversa com ${nomeCli(c)}: ${e.message}`, "erro");
       throw e;
@@ -1356,6 +1389,19 @@ Escreva tudo em português do Brasil.`;
     a.respondidaEm = agoraISO();
     const conv = conversa(a.contatoId);
     let nota;
+    if (a.tipo === "desconto") {
+      if (decisao === "aprovada") {
+        nota = `RESPOSTA DO DONO ao pedido de DESCONTO #${a.codigo} (${a.produto}): LIBERADO. Valor com desconto: ${brl(a.valorFinal)}${a.valorAtual ? ` (antes ${brl(a.valorAtual)})` : ""}.${comentario ? ` Comentário do dono: "${comentario}".` : ""} Responda o cliente AGORA, animado, começando com algo como "Olá, consigo sim um descontinho pra ti!", passe o valor novo e já conduza para fechar. Não diga que consultou alguém.`;
+        if (c) { c.valor = a.valorFinal; c.temperatura = "quente"; c.proximoPasso = "Fechar com o desconto"; }
+        evento(a.contatoId, `💸 Você liberou o desconto #${a.codigo}: ${brl(a.valorFinal)}`);
+      } else {
+        nota = `RESPOSTA DO DONO ao pedido de DESCONTO #${a.codigo} (${a.produto}): NÃO LIBERADO.${comentario ? ` Comentário do dono: "${comentario}".` : ""} Responda o cliente agora segurando o preço com valor (garantia, procedência, condição no Pix, troca com o usado), com jeito e sem dizer que consultou alguém, e conduza para fechar.`;
+        evento(a.contatoId, `⛔ Você negou o desconto #${a.codigo}`);
+      }
+      conv.notas.push(nota);
+      salvar("aprovacoes", "contatos", `conv:${a.contatoId}`);
+      return a;
+    }
     if (decisao === "aprovada") {
       const corrigido = valorFinal && valorFinal !== a.valor;
       nota = `RESPOSTA DO DONO ao pedido #${a.codigo} (${a.produto}): APROVADO. Tem em estoque.${corrigido ? ` O valor certo é ${brl(valorFinal)}${a.valor ? ` (não ${brl(a.valor)})` : ""}.` : ` Valor confirmado: ${brl(a.valor)}.`}${comentario ? ` Comentário do dono: "${comentario}".` : ""} Siga com a venda e combine pagamento e entrega ou retirada.`;
@@ -1401,6 +1447,7 @@ Escreva tudo em português do Brasil.`;
     if (!r.decisao) return { resposta: `Não entendi. Para o pedido #${alvo.codigo}, responda *SIM*, *NÃO* ou *SIM* com o valor certo.` };
     const comentario = r.comentario.replace(/^(sim|s|ok|n[aã]o|n)\b[\s,.!-]*/i, "").replace(/(?:r\$\s*)?\d[\d.,]*/, "").trim();
     const aprovacao = aplicarAprovacao(alvo.id, r.decisao, r.valor, comentario);
+    if (alvo.tipo === "desconto") return { aprovacao, resposta: r.decisao === "aprovada" ? `💸 #${alvo.codigo} desconto liberado: fica ${brl(aprovacao.valorFinal)}. Já respondo o cliente.` : `⛔ #${alvo.codigo} desconto negado. Vou segurar o preço com o cliente.` };
     return { aprovacao, resposta: r.decisao === "aprovada" ? `✅ #${alvo.codigo} aprovado${r.valor ? ` por ${brl(r.valor)}` : ""}. Já vou avisar o cliente.` : `⛔ #${alvo.codigo} recusado. Vou oferecer outra opção ao cliente.` };
   }
 
@@ -1429,7 +1476,7 @@ Escreva tudo em português do Brasil.`;
   }
   function contextoDono() {
     const agora = new Date();
-    const pend = S.aprovacoes.filter((a) => a.status === "pendente").map((a) => `#${a.codigo} (${a.tipo === "decisao" ? `decisão: ${a.situacao}` : `aprovação: ${a.valor ? brl(a.valor) : "sem preço"}`}) ${nomeCli(contato(a.contatoId))}: ${a.produto}`);
+    const pend = S.aprovacoes.filter((a) => a.status === "pendente").map((a) => `#${a.codigo} (${a.tipo === "decisao" ? `decisão: ${a.situacao}` : a.tipo === "desconto" ? `desconto: de ${brl(a.valorAtual)} para ${brl(a.valor)}` : `aprovação: ${a.valor ? brl(a.valor) : "sem preço"}`}) ${nomeCli(contato(a.contatoId))}: ${a.produto}`);
     const ativos = S.contatos.filter((c) => !c.teste).sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm))).slice(0, 30).map((c) => {
       const ult = (S.conv[c.id]?.mensagens || []).filter((m) => m.de !== "evento").at(-1);
       const quem = ult ? { cliente: "cliente", ia: "IA", dono: "você" }[ult.de] || ult.de : "";
@@ -1467,7 +1514,8 @@ Escreva tudo em português do Brasil.`;
         if (!r.decisao) return { erro: "Para aprovação, a resposta precisa ser sim, não ou sim com o valor." };
         const comentario = r.comentario.replace(/^(sim|s|ok|n[aã]o|n)\b[\s,.!-]*/i, "").replace(/(?:r\$\s*)?\d[\d.,]*/, "").trim();
         aplicarAprovacao(a.id, r.decisao, r.valor, comentario);
-        if (!saida.seguir.includes(a.contatoId)) saida.seguir.push(a.contatoId);
+        const lista = a.tipo === "desconto" ? saida.acionar : saida.seguir; // desconto: o cliente recebe a resposta na hora
+        if (!lista.includes(a.contatoId)) lista.push(a.contatoId);
         return { ok: true, pedido: cod, decisao: r.decisao, valor: r.valor || a.valor || null };
       }
       case "mandar_para_cliente": {
@@ -1588,7 +1636,7 @@ Escreva tudo em português do Brasil.`;
     const pendentes = S.aprovacoes.filter((a) => a.status === "pendente");
     if (pendentes.length && respostaCurta(t)) {
       const r = donoResponde(t);
-      if (r.aprovacao) saida.seguir.push(r.aprovacao.contatoId);
+      if (r.aprovacao) (r.aprovacao.tipo === "desconto" ? saida.acionar : saida.seguir).push(r.aprovacao.contatoId);
       saida.resposta = r.resposta;
       return saida;
     }
