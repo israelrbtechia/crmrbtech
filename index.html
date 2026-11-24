@@ -1267,7 +1267,7 @@ TELAS.painel = () => {
   <div class="aviso info" style="margin-top:12px">Agora: <b>${esc(MODOS_GERAIS[modoEfetivo(null)])}</b>${noturno() ? ` (horário noturno, até ${esc(S.config.atendimento.noiteFim)})` : ""}. <a href="/modo">Trocar no botão</a></div>
   <h2>Hoje</h2>
   <div class="grade g4">
-    <div class="cartao kpi ${pend.length ? "destaque" : ""}" data-a="ir" data-v="aprovacoes" style="cursor:pointer"><b>${pend.length}</b><span>aprovações esperando você</span></div>
+    <div class="cartao kpi ${pend.length ? "destaque" : ""}" data-a="ir" data-v="aprovacoes" style="cursor:pointer"><b>${pend.length}</b><span>aprovações e decisões esperando você</span></div>
     <div class="cartao kpi"><b>${hoje.length}</b><span>compromissos hoje</span></div>
     <div class="cartao kpi" data-a="ir" data-v="funil" style="cursor:pointer"><b>${S.contatos.filter((c) => { const e = estadoFollowup(c); return e.situacao === "devido" || (e.situacao === "agendado" && e.devido <= hojeFim); }).length}</b><span>follow-ups para hoje</span></div>
     <div class="cartao kpi"><b>${ativos}</b><span>negociações abertas</span></div>
@@ -1428,6 +1428,11 @@ TELAS.aprovacoes = () => {
   const hist = S.aprovacoes.filter((a) => a.status !== "pendente").slice(-20).reverse();
   const cartao = (a) => {
     const c = contato(a.contatoId);
+    if (a.tipo === "decisao") return `<div class="cartao cartao-aprov ${a.status === "pendente" ? "pendente" : "aprovada"}">
+      <div class="linha"><b>🤔 #${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : "vd"}">${a.status === "pendente" ? "decidir" : "decidida"}</span></div>
+      <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · ⚠️ ${esc(a.situacao)}${a.temos ? `<br>📦 Temos: ${esc(a.temos)}` : ""}${a.sugestao ? `<br>💡 Sugestão da IA: ${esc(a.sugestao)}` : ""}${a.resumo ? `<br>📝 ${esc(a.resumo)}` : ""}${a.comentario ? `<br>Você decidiu: <b>${esc(a.comentario)}</b>` : ""}</div>
+      ${a.status === "pendente" ? `<div class="linha"><input type="text" id="decisao-${a.id}" data-manter placeholder="O que fazer? ex.: encomenda 7 dias 4.300 · oferece o azul · não trabalhamos" style="flex:1;min-width:220px"><button class="btn prim" data-a="decidir" data-id="${a.id}">Responder</button></div>` : ""}
+    </div>`;
     return `<div class="cartao cartao-aprov ${a.status}">
       <div class="linha"><b>#${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm"}">${a.status}</span></div>
       <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · 💰 ${a.valor ? brl(a.valor) : "sem preço"} · ${esc(a.pagamento)} · 🚚 ${esc(a.entrega)}<br>📝 ${esc(a.resumo)}${a.valorFinal && a.valorFinal !== a.valor ? `<br>Valor final: <b>${brl(a.valorFinal)}</b>` : ""}${a.comentario ? `<br>Você disse: ${esc(a.comentario)}` : ""}</div>
@@ -1441,7 +1446,7 @@ TELAS.aprovacoes = () => {
     </div>`;
   };
   return `<h1>Aprovações</h1>
-  <p class="suave peq">Antes de fechar qualquer venda, a IA pergunta para você se tem em estoque e se o valor está certo. Responda aqui ou no "WhatsApp do dono" ao lado, como você responderia no celular.</p>
+  <p class="suave peq">Antes de fechar qualquer venda, a IA pergunta para você se tem em estoque e se o valor está certo. Quando o cliente pede um modelo ou cor que não está no estoque, ela abre uma 🤔 decisão para você dizer o que fazer. Responda aqui ou no "WhatsApp do dono" ao lado, como você responderia no celular.</p>
   <div class="aprov">
     <div><div class="grade">${pend.length ? pend.map(cartao).join("") : `<div class="cartao vazio">Nenhuma aprovação esperando. 👍</div>`}</div>
     ${hist.length ? `<h2>Respondidas</h2><div class="grade">${hist.map(cartao).join("")}</div>` : ""}</div>
@@ -1966,6 +1971,14 @@ ACOES["aprovar-valor"] = (el) => {
   responderAprovacao(el.dataset.id, "aprovada", v, comentario(el.dataset.id));
 };
 ACOES.recusar = (el) => responderAprovacao(el.dataset.id, "recusada", null, comentario(el.dataset.id));
+ACOES.decidir = (el) => {
+  const t = document.getElementById(`decisao-${el.dataset.id}`)?.value.trim();
+  if (!t) return toast("Escreva o que a IA deve fazer.", "erro");
+  const a = N.responderDecisao(el.dataset.id, t);
+  if (!a) return;
+  seguirConversa(a.contatoId);
+  atualizarTela();
+};
 ACOES["zap-dono"] = () => { const el = $("#zap-dono"); const t = el.value; el.value = ""; donoRespondeNoZap(t); };
 ACOES["salvar-preco"] = (el) => {
   const a = S.aprovacoes.find((x) => x.id === el.dataset.id);
