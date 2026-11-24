@@ -1,6 +1,7 @@
 import { waitUntil } from "@vercel/functions";
 import { ambiente } from "../lib/ambiente.js";
-import { lerAviso, mensagemAntiga } from "../lib/zapi.js";
+import { lerAviso, lerPresenca, mensagemAntiga } from "../lib/zapi.js";
+import { marcarPresenca } from "../lib/banco.js";
 import { receberAviso } from "../lib/atendimento.js";
 
 /**
@@ -16,6 +17,12 @@ const segredoCerto = (request) => {
 export async function POST(request) {
   if (!segredoCerto(request)) return Response.json({ erro: "chave inválida" }, { status: 401 });
   const corpo = await request.json().catch(() => null);
+  const presenca = lerPresenca(corpo);
+  if (presenca) {
+    // "digitando...": só anota; a IA espera o cliente terminar antes de responder.
+    await marcarPresenca(presenca.telefone, presenca.digitando).catch((e) => console.error("presença:", e.message));
+    return Response.json({ ok: true, presenca: presenca.digitando ? "digitando" : "parou" });
+  }
   const aviso = lerAviso(corpo);
   if (!aviso) return Response.json({ ok: true, ignorado: true });
   // Antiga (mais de 30 min) ou histórico sincronizado: entra no CRM só como informação, sem resposta.

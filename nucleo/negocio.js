@@ -313,6 +313,7 @@ export function mesclarChave(k, base, local, remoto) {
  *   aposAgenda()                 a agenda mudou
  *   aoMensagemDono(texto, id)    manda a mensagem ao dono de verdade (servidor: WhatsApp)
  *   buscarNovas(contatoId)       traz mensagens do cliente que chegaram enquanto a IA escrevia (servidor)
+ *   esperarCliente(contatoId)    espera o cliente parar de digitar antes de mandar a resposta (servidor)
  */
 export function criarNucleo(S, ctx = {}) {
   const salvar = (...k) => ctx.salvar?.(...k);
@@ -1308,7 +1309,8 @@ Escreva tudo em português do Brasil.`;
 
         // O cliente mandou mais alguma coisa enquanto a IA escrevia? Então esta resposta não sai:
         // a IA escreve de novo, já sabendo de tudo (para não perguntar o que ele acabou de responder).
-        if (rodada < 2) {
+        if (rodada < 3) {
+          await ctx.esperarCliente?.(contatoId); // o cliente está digitando? espera ele terminar
           await ctx.buscarNovas?.(contatoId);
           const agora = conv.mensagens.filter((m) => m.de === "cliente" && !m.naIA);
           if (agora.length > novas.length) {
