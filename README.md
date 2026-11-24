@@ -28,6 +28,7 @@ A IA roda no servidor (`api/whatsapp.js` → `lib/atendimento.js`, com o mesmo n
 - **De dia** vale o botão em **`/modo`**: um toque alterna entre *A IA responde sozinha*, *A IA sugere, eu aprovo* (a sugestão aparece no CRM) e *Eu respondo*.
 - **Aprovações** chegam no WhatsApp do dono (Configurações > Dono). Responda `sim`, `não` ou `sim 3799`; com mais de um pedido, `A2 sim`.
 - **Quando você responde pelo celular**, a mensagem entra no CRM, a IA aprende com ela e fica quieta naquela conversa por algumas horas.
+- **Saudação com menu**: na primeira mensagem do cliente e quando ele volta depois de 5 dias sem conversa, vai na hora o menu de boas-vindas (editável em Configurações > Saudação com menu). Se ele mandou só "oi", a IA espera a escolha; se já perguntou algo, responde logo depois.
 - **Áudios** do cliente são transcritos; com a voz configurada, a IA responde com um áudio curto na voz do dono.
 - **Follow-ups** saem pela rotina `/api/rotina`: uma vez por dia pela agenda da Vercel (10h07), a cada 10 minutos enquanto o CRM estiver aberto em algum aparelho, ou por um agendador externo chamando `https://SEU-SITE/api/rotina?chave=ZAPI_WEBHOOK_SEGREDO`.
 

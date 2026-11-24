@@ -273,7 +273,7 @@ import {
   dataLocalISO, horaLocal, deLocal, paraLocal, hora, dataCurta, dataHora,
   ESTAGIOS, NOME_ESTAGIO, TIPOS, MODOS, MODOS_GERAIS, CONDICOES, INSTRUCOES_EXEMPLO,
   FONTE_SITE_PADRAO, FOTOS_MODELO_SITE, REGRAS_SITE, TROCAS_REGRAS, atualizarRegras,
-  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo,
+  CONFIG_PADRAO, TEMPERATURAS, FU_PADRAO, ESTILO_PADRAO, mesclar, lerRespostaDono, mesclarChave, criarNucleo, soCumprimento,
 } from "./nucleo/negocio.js";
 
 /* =====================================================================
@@ -1641,6 +1641,16 @@ TELAS.config = () => {
     <p class="aviso info" style="margin-top:0">Agora: <b>modo simulador</b>. Em Conversas você faz o papel do cliente, e as aprovações chegam no "WhatsApp do dono" simulado.</p>
     <p class="peq suave">Para a IA atender o seu WhatsApp de verdade pela <b>Z-API</b>, cadastre na Vercel: <b>ZAPI_INSTANCIA</b> (o "ID do canal"), <b>ZAPI_SECRET</b> (a Secret Key do Omni, menu Segurança) e <b>ZAPI_WEBHOOK_SEGREDO</b> (uma senha que você inventa), e faça Redeploy. Depois volte aqui e toque em "Ligar mensagens no CRM". Na Z-API clássica, use <b>ZAPI_TOKEN</b> no lugar da ZAPI_SECRET e cadastre <b>${esc(location.origin)}/api/whatsapp?chave=SUA_SENHA</b> em "Ao receber" e em "Enviadas por mim".</p>`}</div>
 
+  <h2>Saudação com menu</h2>
+  <div class="cartao">
+    <p class="suave peq" style="margin-top:0">Vai sozinha, na hora, na primeira mensagem do cliente e quando ele volta a falar depois de alguns dias sem conversa. Se ele mandou só "oi", a IA espera ele escolher a opção; se já mandou uma pergunta, a IA responde logo depois do menu.</p>
+    <div class="form">
+      <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="c-saudacao-ativa" ${S.config.saudacao.ativa ? "checked" : ""}> <b>Mandar a saudação com o menu</b></label>
+      <label class="campo"><span>Mandar de novo quando o cliente ficar sem falar com a loja por mais de <small>(dias)</small></span><input type="number" id="c-saudacao-diasSemFalar" min="1" value="${esc(S.config.saudacao.diasSemFalar)}"></label>
+      <label class="campo largo"><span>Texto da saudação</span><textarea id="c-saudacao-texto" rows="12">${esc(S.config.saudacao.texto)}</textarea></label>
+    </div>
+  </div>
+
   <div class="linha" style="margin-top:18px"><button class="btn prim" data-a="salvar-config">Salvar configurações</button></div>
 
   <h2>Nuvem e acesso</h2>
@@ -1734,7 +1744,14 @@ ACOES["novo-contato"] = () => {
 
 function clienteEnvia(contatoId, texto, extra = {}) {
   const c = contato(contatoId);
+  const saudar = N.precisaSaudacao(contatoId);
   adicionarMensagem(contatoId, "cliente", texto, extra);
+  if (saudar) {
+    // Simulador: o menu de boas-vindas sai na hora, como no WhatsApp de verdade.
+    adicionarMensagem(contatoId, "ia", N.textoSaudacao(), { saudacao: true });
+    N.anotarSaudacao(contatoId);
+    if (extra.tipo !== "audio" && soCumprimento(texto)) { render(); return; }
+  }
   if (modoEfetivo(c) !== "manual") {
     if (!iaPronta()) toast(avisoIa(), "erro");
     else agendarIA(contatoId);

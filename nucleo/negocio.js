@@ -97,6 +97,24 @@ export function atualizarRegras(texto) {
   return t;
 }
 
+export const SAUDACAO_PADRAO = `Bem-vindo à RBTech Celulares 📱
+Como podemos te ajudar hoje?
+
+1️⃣ Quero saber mais sobre Xiaomi novos lacrados
+2️⃣ Quero saber mais sobre iPhones novos lacrados
+3️⃣ Quero saber mais sobre iPhones seminovos
+4️⃣ Quero falar sobre produtos e acessórios
+5️⃣ Quero assistência técnica para meu aparelho
+6️⃣ Quero falar sobre garantia de produtos e serviços
+
+📲 Envie a opção desejada + o modelo que procura para agilizar seu atendimento.`;
+/** "oi", "bom dia, tudo bem?": só cumprimento, sem pergunta nem pedido. */
+const PALAVRAS_CUMPRIMENTO = new Set("oi oie oii oiii ola olá opa eai eaí e aí ai aí bom boa dia tarde noite tudo bem bom? td tranquilo blz beleza hello hi salve alo alô fala ae como vai vc você voce pessoal gente amigo amiga moço moça boa? bem? ok".split(" "));
+export function soCumprimento(texto) {
+  const t = String(texto || "").toLowerCase().replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, " ").replace(/[!?.,;:~*_()-]+/g, " ").trim();
+  if (!t || t.length > 40) return !t;
+  return t.split(/\s+/).every((w) => PALAVRAS_CUMPRIMENTO.has(w) || /^(o+i+e*|ol[aá]+|e?a[ií]+)$/.test(w));
+}
 export const CONFIG_PADRAO = {
   marca: { nome: "RBTech", complemento: "Celulares", nomeIA: "Assistente RBTech", cor: "#ffd60a", logo: "" },
   ia: { regrasVersao: 2, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
@@ -107,6 +125,8 @@ export const CONFIG_PADRAO = {
   audio: { modo: "espelhar", maxSegundos: 25 },
   // Quem responde: à noite a IA responde sozinha; de dia, vale o modo escolhido no botão (/modo).
   atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3 },
+  // Saudação com menu: na primeira mensagem e quando o cliente volta depois de alguns dias sem conversa.
+  saudacao: { ativa: true, diasSemFalar: 5, texto: SAUDACAO_PADRAO },
   followup: {
     ativo: true,
     dias: "1, 3, 7",
@@ -441,6 +461,11 @@ export function criarNucleo(S, ctx = {}) {
   Garantia: ${loja.garantia || "(não cadastrada: se perguntarem, chame o dono)"}
   ${site ? `Site: ${site}. Quando precisar de algo que não está aqui (produtos, serviços, políticas), leia o site com web_fetch. Só use páginas desse site.` : ""}
   ${secaoSite()}
+  ${S.config.saudacao?.ativa && textoSaudacao() ? `# Menu de boas-vindas
+  No primeiro contato (e quando o cliente volta depois de uns dias), a loja manda automaticamente este menu:
+  ${textoSaudacao().split("\n").join("\n  ")}
+  Se o cliente responder com um número (ex.: "2" ou "3 iPhone 13"), é a opção desse menu: siga a partir dela sem mandar o menu de novo. Se a opção for de algo que não está no catálogo (ex.: Xiaomi, acessórios), pergunte o modelo e use pedir_aprovacao_dono com valor 0 para o dono informar disponibilidade e preço.
+` : ""}
   # Instruções do dono (siga sempre)
   ${instrucoes || "(nenhuma)"}
 
@@ -872,6 +897,24 @@ export function criarNucleo(S, ctx = {}) {
     return r;
   }
 
+  // ---------------------------------------------------------------- saudação com menu
+  const textoSaudacao = () => semComentarios(S.config.saudacao?.texto || "");
+  /** Chame ANTES de registrar a mensagem nova do cliente: primeira conversa, ou dias sem falar com a loja. */
+  function precisaSaudacao(contatoId, agora = new Date()) {
+    const cfg = S.config.saudacao;
+    if (!cfg?.ativa || !textoSaudacao()) return false;
+    const c = contato(contatoId);
+    if (c?.pausadoAte && new Date(c.pausadoAte) > agora) return false; // o dono está conversando
+    const ultima = conversa(contatoId).mensagens.filter((m) => m.de === "cliente" || m.de === "ia" || m.de === "dono").at(-1);
+    if (!ultima) return true;
+    return agora - new Date(ultima.em) > (Number(cfg.diasSemFalar) || 5) * 864e5;
+  }
+  /** Depois de mandar a saudação: avisa a IA para não repetir o menu. */
+  function anotarSaudacao(contatoId) {
+    conversa(contatoId).notas.push(`A saudação automática da loja, com o menu de opções, acabou de ser enviada ao cliente. Não repita a saudação nem o menu. O menu é este:\n${textoSaudacao()}`);
+    salvar(`conv:${contatoId}`);
+  }
+
   // ---------------------------------------------------------------- modo de atendimento
   /** Das 20h às 8h (configurável) a IA responde sozinha. */
   function noturno(agora = new Date()) {
@@ -1040,6 +1083,6 @@ export function criarNucleo(S, ctx = {}) {
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, executarAgente, guardarRascunho, aplicarAprovacao, donoResponde,
+    noturno, modoEfetivo, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, donoResponde,
   };
 }
