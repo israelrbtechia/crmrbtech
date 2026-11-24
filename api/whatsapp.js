@@ -1,6 +1,6 @@
 import { waitUntil } from "@vercel/functions";
 import { ambiente } from "../lib/ambiente.js";
-import { lerAviso } from "../lib/zapi.js";
+import { lerAviso, mensagemAntiga } from "../lib/zapi.js";
 import { receberAviso } from "../lib/atendimento.js";
 
 /**
@@ -18,6 +18,10 @@ export async function POST(request) {
   const corpo = await request.json().catch(() => null);
   const aviso = lerAviso(corpo);
   if (!aviso) return Response.json({ ok: true, ignorado: true });
+  if (mensagemAntiga(aviso)) {
+    console.log(`whatsapp: mensagem antiga ignorada (${aviso.em})`);
+    return Response.json({ ok: true, ignorado: "antiga" });
+  }
   waitUntil(receberAviso(aviso).catch((e) => console.error("whatsapp:", e)));
   return Response.json({ ok: true });
 }
