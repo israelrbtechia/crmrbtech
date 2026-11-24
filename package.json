@@ -1,0 +1,10 @@
+{
+  "name": "crm-rbtech",
+  "private": true,
+  "type": "module",
+  "description": "CRM com IA da RB Tech: site estático (index.html) e funções da Vercel em api/.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.7.0"
+  }
+}

@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/anthropic/v1/messages", "destination": "/api/anthropic" }
+  ],
+  "functions": {
+    "api/anthropic.js": { "maxDuration": 300 }
+  },
   "headers": [
     {
       "source": "/(.*)",

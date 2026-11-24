@@ -20,8 +20,20 @@ O modelo padrão é o **Claude Haiku 5.5**, o mais barato: para 20 a 25 clientes
 ## Publicar na Vercel
 
 1. Em [vercel.com](https://vercel.com) > **Add New > Project**, importe este repositório.
-2. Em **Framework Preset**, escolha **Other**. Não precisa de comando de build nem de variáveis de ambiente.
-3. Clique em **Deploy**. O app fica em `https://SEU-PROJETO.vercel.app`.
+2. Em **Framework Preset**, escolha **Other**. Não precisa de comando de build.
+3. Em **Settings > Environment Variables**, cadastre (para Production, Preview e Development):
+
+| Variável | O que é | Obrigatória |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Chave da API da Anthropic (console.anthropic.com > API Keys). Marque como **Sensitive**. Fica só no servidor. | sim |
+| `SUPABASE_URL` | Project URL do Supabase (`https://xxxx.supabase.co`) | sim |
+| `SUPABASE_PUBLISHABLE_KEY` | Chave *publishable* (ou *anon public*) do Supabase | sim |
+| `GOOGLE_CLIENT_ID` | Client ID do Google Agenda | não |
+| `CRM_EMAILS` | E-mails que podem usar o CRM, separados por vírgula. Vazio = qualquer usuário criado no Supabase | não |
+
+4. Clique em **Deploy** (ou, se o projeto já existia, **Deployments > ⋯ > Redeploy**, porque variável nova só vale depois de publicar de novo).
+
+Com as variáveis, o CRM abre numa tela de login e não mostra mais campos de chave nem de conexão: a IA, o Supabase e o Google já vêm ligados. O navegador nunca recebe a chave da Anthropic. A IA passa por `api/anthropic.js`, que só atende quem está logado.
 
 Cada novo push na branch `main` publica de novo sozinho.
 
@@ -39,9 +51,9 @@ Sem o Supabase, os dados ficam só no navegador. Com ele, clientes, conversas, f
 1. No [Supabase](https://supabase.com) (pode ser o mesmo projeto do site), abra **SQL Editor**, cole [`supabase/crm.sql`](supabase/crm.sql) e clique em **Run**.
 2. Em **Authentication > Users > Add user**, crie o acesso do dono (e-mail e senha, com *Auto Confirm User*).
 3. Em **Authentication > Sign In / Providers**, desligue **Allow new users to sign up**.
-4. No CRM, em **Configurações > Salvar na nuvem**, cole a Project URL e a chave *publishable* (ou *anon public*), entre com o e-mail e a senha e clique em **Conectar**.
+4. Coloque a Project URL e a chave nas variáveis da Vercel (acima) e entre no CRM com o e-mail e a senha.
 
-Só o usuário logado lê e grava os dados (RLS). A chave da Anthropic não vai para a nuvem: cadastre-a em cada aparelho.
+Só o usuário logado lê e grava os dados (RLS).
 
 ## Importante
 
