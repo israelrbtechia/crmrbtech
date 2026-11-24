@@ -23,17 +23,20 @@ O modelo padrão é o **Claude Haiku 5.5**, o mais barato: para 20 a 25 clientes
 2. Em **Framework Preset**, escolha **Other**. Não precisa de comando de build.
 3. Em **Settings > Environment Variables**, cadastre (para Production, Preview e Development):
 
-| Variável | O que é | Obrigatória |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Chave da API da Anthropic (console.anthropic.com > API Keys). Marque como **Sensitive**. Fica só no servidor. | sim |
-| `SUPABASE_URL` | Project URL do Supabase (`https://xxxx.supabase.co`) | sim |
-| `SUPABASE_PUBLISHABLE_KEY` | Chave *publishable* (ou *anon public*) do Supabase | sim |
-| `GOOGLE_CLIENT_ID` | Client ID do Google Agenda | não |
-| `CRM_EMAILS` | E-mails que podem usar o CRM, separados por vírgula. Vazio = qualquer usuário criado no Supabase | não |
+| Variável | O que é |
+|---|---|
+| `CRM_USUARIO` | Usuário do login do CRM (ex.: `RBTech`) |
+| `CRM_SENHA` | Senha do login do CRM. Marque como **Sensitive**. |
+| `ANTHROPIC_API_KEY` | Chave da API da Anthropic (console.anthropic.com > API Keys). Marque como **Sensitive**. |
+| `SUPABASE_URL` | Project URL do Supabase (`https://xxxx.supabase.co`) |
+| `SUPABASE_PUBLISHABLE_KEY` | Chave *publishable* (ou *anon public*) do Supabase |
+| `SUPABASE_EMAIL` | E-mail do usuário criado no Supabase (Authentication > Users) |
+| `SUPABASE_SENHA` | Senha desse usuário do Supabase. Marque como **Sensitive**. |
+| `GOOGLE_CLIENT_ID` | Client ID do Google Agenda (opcional) |
 
 4. Clique em **Deploy** (ou, se o projeto já existia, **Deployments > ⋯ > Redeploy**, porque variável nova só vale depois de publicar de novo).
 
-Com as variáveis, o CRM abre numa tela de login e não mostra mais campos de chave nem de conexão: a IA, o Supabase e o Google já vêm ligados. O navegador nunca recebe a chave da Anthropic. A IA passa por `api/anthropic.js`, que só atende quem está logado.
+O CRM abre numa tela de login (usuário e senha das variáveis `CRM_USUARIO` e `CRM_SENHA`) e não tem nenhum campo de chave ou de conexão: a IA, o Supabase e o Google vêm das variáveis. O servidor confere o login (`api/login.js`; 5 senhas erradas seguidas bloqueiam por 15 minutos) e entra no Supabase com `SUPABASE_EMAIL` e `SUPABASE_SENHA`. A IA passa por `api/anthropic.js`, que só atende quem está logado: o navegador nunca recebe a chave da Anthropic.
 
 Cada novo push na branch `main` publica de novo sozinho.
 
@@ -49,9 +52,9 @@ Cada novo push na branch `main` publica de novo sozinho.
 Sem o Supabase, os dados ficam só no navegador. Com ele, clientes, conversas, funil, aprovações, agenda, catálogo, configurações e o estilo de escrita ficam salvos na nuvem e aparecem no computador e no celular.
 
 1. No [Supabase](https://supabase.com) (pode ser o mesmo projeto do site), abra **SQL Editor**, cole [`supabase/crm.sql`](supabase/crm.sql) e clique em **Run**.
-2. Em **Authentication > Users > Add user**, crie o acesso do dono (e-mail e senha, com *Auto Confirm User*).
+2. Em **Authentication > Users > Add user**, crie o usuário que o CRM usa por trás (e-mail e senha, com *Auto Confirm User*). Esse e-mail e essa senha vão nas variáveis `SUPABASE_EMAIL` e `SUPABASE_SENHA`.
 3. Em **Authentication > Sign In / Providers**, desligue **Allow new users to sign up**.
-4. Coloque a Project URL e a chave nas variáveis da Vercel (acima) e entre no CRM com o e-mail e a senha.
+4. Coloque a Project URL e a chave nas variáveis da Vercel (acima).
 
 Só o usuário logado lê e grava os dados (RLS).
 
