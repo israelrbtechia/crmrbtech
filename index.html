@@ -1335,7 +1335,7 @@ function telaChat(c) {
     const corpo = m.audio
       ? `<audio controls preload="none" src="${esc(m.audio)}"></audio>${loja ? `<details><summary>🔊 texto do áudio</summary>${fmtZap(m.texto)}</details>` : `<div class="transcr">📝 ${fmtZap(m.texto)}</div>`}`
       : fmtZap(m.texto);
-    return `<div class="bolha ${loja ? "loja" : "cliente"} ${m.de === "ia" ? "ia" : ""}">${loja ? `<span class="autor">${m.de === "ia" ? `🤖 ${esc(S.config.marca.nomeIA)}` : "Você"}${m.followup ? ` · ⏰ follow-up ${m.followup}` : ""}${m.audio ? " · 🎤 áudio" : ""}</span>` : ""}${corpo}<span class="hora">${hora(m.em)}</span></div>`;
+    return `<div class="bolha ${loja ? "loja" : "cliente"} ${m.de === "ia" ? "ia" : ""}">${loja ? `<span class="autor">${m.de === "ia" ? `🤖 ${esc(S.config.marca.nomeIA)}` : "Você"}${m.followup ? ` · ⏰ follow-up ${m.followup}` : ""}${m.audio ? " · 🎤 áudio" : ""}</span>` : ""}${corpo}<span class="hora">${m.historico ? `${dataCurta(m.em)} ` : ""}${hora(m.em)}${m.historico ? " · histórico" : ""}</span></div>`;
   }).join("");
   return `
   <div class="chat-topo">
@@ -1608,7 +1608,7 @@ const ABAS_CONFIG = [
   ["whatsapp", "💬", "WhatsApp", ["WhatsApp", "Saudação com menu", "Leads de anúncio"]],
   ["voz", "🎙️", "Voz e áudio", ["Voz e áudio"]],
   ["site", "🌐", "Site e agenda", ["Site da loja", "Google Agenda"]],
-  ["conta", "☁️", "Conta e backup", ["Nuvem e acesso", "Chaves antigas deste navegador", "Backup e revenda"]],
+  ["conta", "☁️", "Conta e backup", ["Nuvem e acesso", "Chaves antigas deste navegador", "Limpar clientes criados por engano", "Backup e revenda"]],
 ];
 let abaConfig = (() => { try { return localStorage.getItem("crmy-aba-config") || "loja"; } catch { return "loja"; } })();
 /** Configurações em abas: todas as seções ficam na página (o Salvar pega tudo), só a aba escolhida aparece. */
@@ -1713,7 +1713,9 @@ function configSecoes() {
     <p class="aviso info" style="margin-top:0">✓ <b>WhatsApp conectado pela Z-API.</b> O servidor atende 24 horas, mesmo com o CRM fechado: das ${esc(S.config.atendimento.noiteInicio)} às ${esc(S.config.atendimento.noiteFim)} a IA responde sozinha; de dia vale o botão em <a href="/modo">/modo</a>. Pedidos de aprovação vão para o seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : " (cadastre o seu número em Dono)"}: responda <b>sim</b>, <b>não</b> ou <b>sim 3799</b>.</p>
     ${SERVIDOR.zapOmni ? `<div class="linha"><button class="btn prim" data-a="ligar-zap">🔗 Ligar mensagens no CRM</button><button class="btn" data-a="estado-zap">Conferir conexão</button><span class="suave peq" id="estado-zap"></span></div>
     <p class="suave peq">Omni Z-API: o botão cadastra no Omni o endereço deste CRM para receber as mensagens. Toque de novo se trocar a ZAPI_WEBHOOK_SEGREDO.</p>` : `<p class="suave peq">Endereço que fica cadastrado na Z-API (em "Ao receber" e em "Enviadas por mim"): <b>${esc(location.origin)}/api/whatsapp?chave=</b> + o valor da variável ZAPI_WEBHOOK_SEGREDO.</p>`}
-    <p class="suave peq">Você manda ordens para a IA pelo WhatsApp, em texto ou áudio, do seu número pessoal para o número da loja (ex.: "manda mensagem pro João dizendo que o 15 Pro chegou", "o 13 de 128 agora é 2.599", "muda para eu respondo"). Quando você responde um cliente pelo celular, a IA fica quieta naquela conversa por ${esc(S.config.atendimento.pausaAoAssumirHoras)} h e aprende com a sua resposta.</p>` : `
+    <p class="suave peq">Quando você responde um cliente pelo celular, a IA fica quieta naquela conversa por ${esc(S.config.atendimento.pausaAoAssumirHoras)} h e aprende com a sua resposta.</p>
+    <label class="campo" style="max-width:340px"><span>A IA só responde mensagens que chegarem depois de <small>(marcado sozinho ao tocar em "Ligar mensagens no CRM")</small></span><input type="datetime-local" id="ativo-desde" value="${S.config.atendimento.ativoDesde ? paraLocal(new Date(S.config.atendimento.ativoDesde)) : ""}"></label>
+    <p class="suave peq">Mensagens de antes dessa hora, com mais de 30 minutos ou do histórico que o WhatsApp sincroniza ao conectar entram no CRM só como informação: sem resposta da IA, sem menu e sem aprovar nada.</p>` : `
     <p class="aviso info" style="margin-top:0">Agora: <b>modo simulador</b>. Em Conversas você faz o papel do cliente, e as aprovações chegam no "WhatsApp do dono" simulado.</p>
     <p class="peq suave">Para a IA atender o seu WhatsApp de verdade pela <b>Z-API</b>, cadastre na Vercel: <b>ZAPI_INSTANCIA</b> (o "ID do canal"), <b>ZAPI_SECRET</b> (a Secret Key do Omni, menu Segurança) e <b>ZAPI_WEBHOOK_SEGREDO</b> (uma senha que você inventa), e faça Redeploy. Depois volte aqui e toque em "Ligar mensagens no CRM". Na Z-API clássica, use <b>ZAPI_TOKEN</b> no lugar da ZAPI_SECRET e cadastre <b>${esc(location.origin)}/api/whatsapp?chave=SUA_SENHA</b> em "Ao receber" e em "Enviadas por mim".</p>`}</div>
 
@@ -1752,6 +1754,16 @@ function configSecoes() {
     <div class="lista">${chavesAntigas().map(([nome, valor]) => `<div class="item"><div class="espaco"><b>${nome}</b><div class="suave peq">${esc(nome === "ANTHROPIC_API_KEY" ? `${String(valor).slice(0, 10)}…${String(valor).slice(-4)}` : valor)}</div></div><button class="btn pq" data-a="copiar-chave" data-nome="${nome}">Copiar</button></div>`).join("")}</div>
     <div class="linha" style="margin-top:10px"><button class="btn perigo" data-a="apagar-chaves-antigas">Apagar estas chaves deste navegador</button></div>
   </div>` : ""}
+
+  <h2>Limpar clientes criados por engano</h2>
+  <div class="cartao">
+    <p class="suave peq" style="margin-top:0">Apaga os cartões e as conversas de clientes que entraram pelo WhatsApp numa faixa de horário (por exemplo, quando o histórico foi sincronizado e a IA respondeu conversas antigas). Antes de apagar, você vê a lista e pode desmarcar quem quiser manter.</p>
+    <div class="linha">
+      <label class="campo"><span>Criados de</span><input type="datetime-local" id="limpar-de" value="${dataLocalISO(new Date())}T00:00"></label>
+      <label class="campo"><span>até</span><input type="datetime-local" id="limpar-ate" value="${paraLocal(new Date())}"></label>
+      <button class="btn" data-a="limpar-ver">Ver quem será apagado</button>
+    </div>
+  </div>
 
   <h2>Backup e revenda</h2>
   <div class="cartao"><div class="linha">
@@ -2314,8 +2326,9 @@ const mostrarEstadoZap = (d) => {
 ACOES["ligar-zap"] = async (el) => {
   el.disabled = true;
   try {
-    await chamarZap("POST");
-    toast("Pronto: as mensagens do WhatsApp agora chegam no CRM.", "ok");
+    const d = await chamarZap("POST");
+    if (d.ativoDesde) { S.config.atendimento.ativoDesde = d.ativoDesde; salvar("config"); }
+    toast("Pronto: as mensagens do WhatsApp agora chegam no CRM. A IA responde só o que chegar daqui para frente.", "ok");
     mostrarEstadoZap(await chamarZap("GET"));
   } catch (e) { toast(e.message, "erro"); }
   el.disabled = false;
@@ -2448,6 +2461,35 @@ ACOES["estudar-estilo"] = async (el) => {
   render();
 };
 
+// Limpeza de clientes criados por engano
+ACOES["limpar-ver"] = () => {
+  const de = deLocal($("#limpar-de").value), ate = deLocal($("#limpar-ate").value);
+  if (!de || !ate || ate <= de) return toast("Escolha o horário de início e de fim.", "erro");
+  const lista = S.contatos.filter((c) => String(c.origem || "").startsWith("whatsapp") && c.criadoEm && new Date(c.criadoEm) >= de && new Date(c.criadoEm) <= ate);
+  if (!lista.length) return toast("Nenhum cliente do WhatsApp criado nesse horário.", "ok");
+  const linha = (c) => {
+    const ms = S.conv[c.id]?.mensagens || [];
+    const ult = ms.filter((m) => m.de !== "evento").at(-1);
+    return `<label class="linha" style="cursor:pointer;align-items:flex-start;margin:6px 0"><input type="checkbox" class="limpar-item" value="${c.id}" checked> <span><b>${esc(nomeCli(c))}</b> <span class="suave peq">· criado ${dataHora(c.criadoEm)} · ${ms.filter((m) => m.de !== "evento").length} mensagens${ult ? ` · última: "${esc(String(ult.texto || "").slice(0, 60))}"` : ""}</span></span></label>`;
+  };
+  abrirModal(`Apagar ${lista.length} cliente(s)?`, `<p class="suave peq">Apaga o cartão, a conversa, as aprovações e os compromissos de cada cliente marcado, aqui e na nuvem. Não dá para desfazer. Desmarque quem você quer manter.</p><div style="max-height:50vh;overflow:auto">${lista.map(linha).join("")}</div>`, [
+    { texto: "Cancelar", acao: fecharModal },
+    { texto: "Apagar marcados", classe: "perigo", acao: () => {
+      const ids = new Set([...document.querySelectorAll(".limpar-item:checked")].map((x) => x.value));
+      if (!ids.size) return fecharModal();
+      S.contatos = S.contatos.filter((c) => !ids.has(c.id));
+      S.aprovacoes = S.aprovacoes.filter((a) => !ids.has(a.contatoId));
+      S.compromissos = S.compromissos.filter((x) => !ids.has(x.contatoId));
+      for (const id of ids) { delete S.conv[id]; apagarChave(`conv:${id}`); }
+      salvar("contatos", "aprovacoes", "compromissos");
+      registrar(`🧹 Limpeza: ${ids.size} cliente(s) criados por engano foram apagados.`);
+      fecharModal();
+      toast(`${ids.size} cliente(s) apagados.`, "ok");
+      render();
+    } },
+  ]);
+};
+
 // Configurações
 ACOES["aba-config"] = (el) => {
   abaConfig = el.dataset.v;
@@ -2465,6 +2507,8 @@ ACOES["salvar-config"] = () => {
     cfg[grupo][campo] = el.type === "checkbox" ? el.checked : el.type === "number" ? Number(el.value) : el.value.trim();
   }
   cfg.dono.whatsapp = soDigitos(cfg.dono.whatsapp);
+  const desde = $("#ativo-desde");
+  if (desde) cfg.atendimento.ativoDesde = desde.value ? (deLocal(desde.value)?.toISOString() ?? cfg.atendimento.ativoDesde) : null;
   salvar("config"); aplicarMarca(); render();
   toast("Configurações salvas.", "ok");
 };

@@ -1,5 +1,6 @@
 import { usuarioDoCrm } from "../lib/auth.js";
 import { ligarWebhook, statusZap, webhookStatus, ehOmni } from "../lib/zapi.js";
+import { marcarInicioAtendimento } from "../lib/atendimento.js";
 
 /** Estado do WhatsApp (GET) e cadastro automático do webhook no Omni Z-API (POST). Só logado. */
 export async function GET(request) {
@@ -15,7 +16,9 @@ export async function POST(request) {
   try {
     const base = new URL(request.url).origin;
     await ligarWebhook(base);
-    return Response.json({ ok: true, webhook: await webhookStatus(base) });
+    // A IA só responde o que chegar daqui para frente; o resto vira registro no CRM.
+    const ativoDesde = await marcarInicioAtendimento();
+    return Response.json({ ok: true, ativoDesde, webhook: await webhookStatus(base) });
   } catch (e) {
     return Response.json({ erro: e.message }, { status: 400 });
   }

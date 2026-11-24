@@ -179,7 +179,8 @@ export const CONFIG_PADRAO = {
   importacao: { fonte: FONTE_SITE_PADRAO, auto: true, ultimaEm: null, resumo: "" },
   audio: { modo: "espelhar", maxSegundos: 25, jeito: JEITO_AUDIO_PADRAO },
   // Quem responde: à noite a IA responde sozinha; de dia, vale o modo escolhido no botão (/modo).
-  atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3 },
+  // ativoDesde: a IA só responde mensagens que chegarem depois desta hora (marcada ao ligar o WhatsApp).
+  atendimento: { modoDia: "sugerir", noiteAtiva: true, noiteInicio: "20:00", noiteFim: "08:00", pausaAoAssumirHoras: 3, ativoDesde: null },
   // Saudação com menu: na primeira mensagem e quando o cliente volta depois de alguns dias sem conversa.
   saudacao: { ativa: true, diasSemFalar: 5, texto: SAUDACAO_PADRAO },
   // Inspetor de vendas: lê as últimas conversas e sugere melhorias para a IA.

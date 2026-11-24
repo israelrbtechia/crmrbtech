@@ -18,11 +18,10 @@ export async function POST(request) {
   const corpo = await request.json().catch(() => null);
   const aviso = lerAviso(corpo);
   if (!aviso) return Response.json({ ok: true, ignorado: true });
-  if (mensagemAntiga(aviso)) {
-    console.log(`whatsapp: mensagem antiga ignorada (${aviso.em})`);
-    return Response.json({ ok: true, ignorado: "antiga" });
-  }
-  waitUntil(receberAviso(aviso).catch((e) => console.error("whatsapp:", e)));
+  // Antiga (mais de 30 min) ou histórico sincronizado: entra no CRM só como informação, sem resposta.
+  const soRegistrar = aviso.historico || mensagemAntiga(aviso);
+  waitUntil(receberAviso(aviso, { soRegistrar }).catch((e) => console.error("whatsapp:", e)));
+  if (soRegistrar) return Response.json({ ok: true, soRegistro: true });
   return Response.json({ ok: true });
 }
 
