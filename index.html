@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   --marca: #ffd60a; --marca-texto: #0f0f0f;
@@ -24,7 +24,7 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--fundo); color: var(--texto); font: 15px/1.5 "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; accent-color: var(--marca); }
+body { margin: 0; background: var(--fundo); color: var(--texto); font: 14.5px/1.5 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; accent-color: var(--marca); }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--marca); }
 h1 { font-size: 1.45rem; font-weight: 800; margin: 0 0 4px; }
@@ -251,6 +251,170 @@ pre.prompt { white-space: pre-wrap; background: var(--fundo); border: 1px solid 
 .exemplo .c { color: var(--suave); }
 .exemplo .d { margin-top: 4px; }
 
+
+/* ===== Design system v2: CRM profissional ===== */
+:root { --fundo: #0b0b0c; --sup: #131315; --sup2: #1a1a1d; --sup3: #242428; --borda: #222226; --borda2: #2e2e33; --texto: #ededef; --suave: #9b9ba3; --apagado: #6b6b73; --raio: 12px; }
+body { font-feature-settings: "cv11", "ss01"; }
+h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.015em; }
+h2 { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); margin: 28px 0 10px; }
+h2::before { display: none; }
+h3 { font-weight: 600; }
+.lateral { background: #0f0f11; padding: 16px 10px; gap: 6px; }
+.marca { padding: 2px 8px 12px; border-bottom: 1px solid var(--borda); margin-bottom: 4px; }
+.marca div { min-width: 0; }
+.marca small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-grupo { font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--apagado); padding: 14px 12px 5px; }
+nav button { padding: 8px 12px; font-size: .9rem; }
+nav button.ativo { background: var(--sup2); color: var(--texto); font-weight: 600; box-shadow: inset 2px 0 0 var(--marca); }
+nav button.ativo .ic { color: var(--marca); }
+nav button.ativo .selo, .selo { background: var(--erro); color: #fff; }
+.rodape-lateral { border-top: 1px solid var(--borda); padding: 12px 8px 0; }
+.vista { padding: 26px 32px 64px; max-width: 1320px; }
+
+/* Cabeçalho de página */
+.pg-cab { display: flex; align-items: flex-end; gap: 14px 18px; flex-wrap: wrap; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid var(--borda); }
+.pg-cab .tit { flex: 1 1 260px; min-width: 0; }
+.pg-cab h1 { margin: 0; }
+.pg-cab p { margin: 3px 0 0; color: var(--suave); font-size: .86rem; max-width: 760px; }
+.pg-acoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 13px; border-radius: 99px; background: var(--sup); border: 1px solid var(--borda2); font-size: .82rem; color: var(--texto); text-decoration: none; font-weight: 500; white-space: nowrap; }
+a.pill:hover { background: var(--sup2); }
+.pill.pq { height: 28px; font-size: .76rem; padding: 0 10px; }
+
+/* Botões */
+.btn { height: 36px; padding: 0 14px; border-radius: 9px; font-weight: 600; font-size: .85rem; background: var(--sup2); border: 1px solid var(--borda2); justify-content: center; color: var(--texto); }
+.btn:hover { background: var(--sup3); border-color: #3a3a40; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn.prim { background: var(--marca); border-color: var(--marca); color: var(--marca-texto); }
+.btn.prim:hover, .btn.ok:hover { filter: brightness(1.07); }
+.btn.prim:hover { background: var(--marca); border-color: var(--marca); }
+.btn.ok { color: #04140a; }
+.btn.ok:hover { background: var(--ok); border-color: var(--ok); }
+.btn.perigo { background: transparent; border-color: rgba(255,107,107,.32); color: var(--erro); }
+.btn.perigo:hover { background: rgba(255,107,107,.09); border-color: rgba(255,107,107,.5); }
+.btn.fantasma { background: transparent; border-color: transparent; color: var(--suave); }
+.btn.fantasma:hover { background: var(--sup2); color: var(--texto); }
+.btn.pq { height: 30px; padding: 0 10px; font-size: .78rem; border-radius: 8px; }
+.btn.ic-btn { width: 30px; padding: 0; }
+.btn.ic-btn.grande { width: 36px; }
+
+/* Campos */
+input[type=text], input[type=password], input[type=number], input[type=url], input[type=tel], input[type=datetime-local], input[type=search], select { min-height: 36px; }
+input[type=text], input[type=password], input[type=number], input[type=url], input[type=tel], input[type=datetime-local], input[type=search], select, textarea { background: #0e0e10; border-color: var(--borda2); border-radius: 9px; }
+input::placeholder, textarea::placeholder { color: var(--apagado); }
+label.campo { font-size: .8rem; }
+
+/* Cartões */
+.cartao { border-radius: var(--raio); padding: 18px; }
+.cartao > h3:first-child { font-size: .92rem; margin: 0 0 14px; }
+.card-cab { display: flex; align-items: center; gap: 10px; margin: -2px 0 14px; }
+.card-cab h3 { margin: 0; font-size: .92rem; flex: 1; }
+.card-cab .link { background: none; border: 0; padding: 0; color: var(--suave); font-size: .78rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; }
+.card-cab .link:hover { color: var(--texto); }
+.card-cab .link svg { width: 14px; height: 14px; }
+.conta { font-size: .72rem; font-weight: 600; color: var(--suave); background: var(--sup3); border-radius: 99px; padding: 1px 8px; }
+.etq { font-weight: 600; font-size: .7rem; padding: 2px 8px; border-radius: 6px; }
+.vazio { padding: 22px 10px; font-size: .86rem; }
+
+/* Indicadores */
+.kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; }
+.kpi[data-a] { cursor: pointer; }
+.kpi .kpi-rot { display: flex; align-items: center; gap: 8px; color: var(--suave); font-size: .78rem; font-weight: 500; }
+.kpi .kpi-rot svg { width: 16px; height: 16px; color: var(--apagado); flex: none; }
+.kpi .kpi-rot, .kpi small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.coluna h3 { gap: 8px; align-items: baseline; }
+.coluna h3 > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.coluna h3 .suave { white-space: nowrap; flex: none; }
+td input, td select { background: transparent !important; border-color: transparent !important; }
+tr:hover td input:not(:disabled), tr:hover td select:not(:disabled) { border-color: var(--borda2) !important; }
+td input:focus, td select:focus { background: #0e0e10 !important; }
+td.suave { font-size: .76rem; }
+.kpi b { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--apagado); font-size: .74rem; }
+.kpi.destaque { border-color: rgba(255,214,10,.5); background: linear-gradient(180deg, rgba(255,214,10,.07), rgba(255,214,10,0) 70%), var(--sup); }
+.kpi.destaque .kpi-rot svg { color: var(--marca); }
+
+/* Painel */
+.painel-grade { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+.painel-grade > div { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.item { background: transparent; border: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; }
+.item[data-a] { cursor: pointer; transition: background .15s, border-color .15s; }
+.item[data-a]:hover { background: var(--sup2); border-color: var(--borda2); }
+.item .seta { color: var(--apagado); display: grid; }
+.valor-lista { color: var(--marca); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .9rem; }
+.item .seta svg { width: 16px; height: 16px; }
+.item .avatar { width: 36px; height: 36px; font-size: .8rem; }
+.ativ { display: grid; grid-template-columns: 92px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--borda); font-size: .82rem; }
+.ativ:last-child { border: 0; }
+.ativ .quando { color: var(--apagado); font-variant-numeric: tabular-nums; }
+.ativ.erro .txt { color: var(--erro); }
+.progresso { height: 6px; border-radius: 6px; background: var(--sup3); overflow: hidden; margin: 0 0 10px; }
+.progresso i { display: block; height: 100%; background: var(--ok); border-radius: 6px; }
+.passo { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--borda); font-size: .86rem; }
+.passo:last-child { border: 0; }
+.passo .bola { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--borda2); display: grid; place-items: center; }
+.passo.feito .bola { background: var(--ok); border-color: var(--ok); color: #04140a; }
+.passo .bola svg { width: 12px; height: 12px; }
+.passo.feito .espaco > div:first-child { color: var(--suave); }
+details.feitos summary { cursor: pointer; color: var(--suave); font-size: .78rem; padding-top: 8px; }
+
+/* Menu "Mais" */
+details.menu { position: relative; }
+details.menu > summary { list-style: none; }
+details.menu > summary::-webkit-details-marker { display: none; }
+.menu-itens { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 250px; background: var(--sup2); border: 1px solid var(--borda2); border-radius: 12px; padding: 6px; box-shadow: 0 18px 44px rgba(0,0,0,.55); display: flex; flex-direction: column; }
+.menu-itens .mi { display: flex; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: .85rem; font-weight: 500; background: none; border: 0; text-align: left; color: var(--texto); }
+.menu-itens .mi:hover { background: var(--sup3); }
+.menu-itens .mi svg { width: 16px; height: 16px; color: var(--suave); }
+.menu-itens hr { border: 0; border-top: 1px solid var(--borda2); margin: 4px 2px; width: auto; }
+
+/* Conversas */
+.conv-lista { background: #0f0f11; }
+.conv-lista header { padding: 14px; gap: 10px; }
+.conv-lista header h3 { font-size: 1.05rem; }
+.conv-item { padding: 12px 14px; border-bottom: 1px solid var(--borda); }
+.conv-item:hover { background: var(--sup); }
+.conv-item.ativo { background: var(--sup2); box-shadow: inset 2px 0 0 var(--marca); }
+.chat { background: var(--fundo); }
+.chat-topo { background: var(--sup); padding: 10px 16px; }
+.compor, .rascunho { padding: 10px 16px; }
+.rascunho b { display: inline-flex; align-items: center; gap: 6px; }
+.rascunho b svg { width: 16px; height: 16px; color: var(--azul); }
+.segm { background: #0e0e10; border-color: var(--borda2); border-radius: 9px; padding: 2px; gap: 2px; }
+.segm button { border-radius: 7px; padding: 5px 11px; }
+.segm button:hover:not(.ativo) { color: var(--texto); }
+
+/* Funil */
+.filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 18px 0 12px; }
+.coluna { background: #0f0f11; border-color: var(--borda); padding: 10px; }
+.coluna h3 { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); padding: 4px 4px 8px; border-bottom: 1px solid var(--borda); margin-bottom: 2px; }
+.coluna h3 .suave { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.card-cli { background: var(--sup); border: 1px solid var(--borda); }
+.card-cli:hover { border-color: var(--borda2); background: var(--sup2); }
+
+/* Aprovações */
+.cartao-aprov { border-left-width: 3px; }
+.aprov-topo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.aprov-topo b { min-width: 0; }
+.meta { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 5px 14px; margin: 12px 0 14px; font-size: .84rem; }
+.meta dt { color: var(--suave); }
+.meta dd { margin: 0; min-width: 0; }
+.aprov-acoes { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--borda); }
+.aprov-acoes .direita { margin-left: auto; }
+.celular header .avatar svg { width: 20px; height: 20px; }
+
+/* Agenda e catálogo */
+.dia > b { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--suave); }
+.comp { background: var(--sup); border-color: var(--borda); }
+th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; background: #111113; color: var(--suave); }
+tbody tr:hover td { background: rgba(255,255,255,.015); }
+.tabela-wrap { border-color: var(--borda); }
+
+/* Configurações */
+.cfg-abas { background: #0f0f11; border-color: var(--borda); }
+.cfg-abas button.ativo { background: var(--sup2); color: var(--texto); font-weight: 600; box-shadow: inset 2px 0 0 var(--marca); }
+dialog { border-radius: 14px; border-color: var(--borda2); }
 @media (max-width: 900px) {
   /* Celular: menu numa coluna estreita à esquerda, com ícone e nome curto */
   .app { grid-template-columns: 66px minmax(0, 1fr); grid-template-rows: 1fr; height: 100dvh; }
@@ -286,6 +450,28 @@ pre.prompt { white-space: pre-wrap; background: var(--fundo); border: 1px solid 
   .aprov { grid-template-columns: 1fr; }
   .celular { position: static; height: 520px; }
   .bolha { max-width: 88%; }
+}
+
+@media (max-width: 900px) {
+  .nav-grupo { display: none; }
+  .marca { border: 0; padding: 0 0 6px; margin: 0; }
+  nav button.ativo { box-shadow: none; background: var(--sup2); }
+  nav button.ativo .curto { color: var(--texto); }
+  .vista { padding: 16px 12px calc(60px + env(safe-area-inset-bottom)); }
+  .pg-cab { padding-bottom: 14px; margin-bottom: 16px; }
+  .pg-cab h1 { font-size: 1.2rem; }
+  .pg-acoes { width: 100%; }
+  .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { padding: 12px; gap: 4px; }
+  .kpi .kpi-rot { display: flex; font-size: .72rem; margin: 0; }
+  .kpi b { font-size: 1.3rem; }
+  .kpi small { display: none; }
+  .painel-grade { grid-template-columns: 1fr; }
+  .meta { grid-template-columns: 96px minmax(0, 1fr); }
+  .aprov-acoes .direita { margin-left: 0; }
+  .menu-itens { right: auto; left: 0; }
+  .ativ { grid-template-columns: 74px 1fr; }
+  .item .etq.az, .item .etq.am, .item .etq:not(.vm) { display: none; }
 }
 </style>
 </head>
@@ -1251,7 +1437,42 @@ const ICONES = {
   catalogo: svgIcone('<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>'),
   ia: svgIcone('<path d="M12 3l1.7 4.6L18.5 9l-4.8 1.6L12 15.2l-1.7-4.6L5.5 9l4.8-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
   config: svgIcone('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
+  mais: svgIcone('<path d="M12 5v14M5 12h14"/>'),
+  relogio: svgIcone('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  dinheiro: svgIcone('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v5M18 9.5v5"/>'),
+  trofeu: svgIcone('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'),
+  chip: svgIcone('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2.5v3.5M15 2.5v3.5M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>'),
+  seta: svgIcone('<path d="M9 6l6 6-6 6"/>'),
+  etiqueta: svgIcone('<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
+  atualizar: svgIcone('<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/>'),
+  pontos: svgIcone('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'),
+  usuarios: svgIcone('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
+  lixo: svgIcone('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  check: svgIcone('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  baixar: svgIcone('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  subir: svgIcone('<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>'),
+  colar: svgIcone('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>'),
+  mic: svgIcone('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
+  clipe: svgIcone('<path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15.5 7.5"/>'),
+  parar: svgIcone('<rect x="6" y="6" width="12" height="12" rx="2"/>'),
+  cadeado: svgIcone('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  aberto: svgIcone('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>'),
 };
+const IC = ICONES;
+/** Cabeçalho padrão das telas: título, explicação curta e ações à direita. */
+const cab = (titulo, sub = "", acoes = "") => `<header class="pg-cab"><div class="tit"><h1>${titulo}</h1>${sub ? `<p>${sub}</p>` : ""}</div>${acoes ? `<div class="pg-acoes">${acoes}</div>` : ""}</header>`;
+const semEmoji = (t) => String(t || "").replace(/^[^\p{L}\p{N}]+/u, "");
+/** Pílula com quem está respondendo agora (leva ao botão de modo). */
+const pillModo = (pq = false) => { const m = modoEfetivo(null); return `<a class="pill ${pq ? "pq" : ""}" href="/modo" title="Trocar quem responde"><span class="ponto ${m === "manual" ? "alerta" : "ok"}"></span>Agora: ${esc(semEmoji(MODOS_GERAIS[m]))}${noturno() ? " · noite" : ""}</a>`; };
+/** Indicador do topo das telas. */
+const kpi = (ic, rot, valor, sub = "", { ir: destino, destaque } = {}) => `<div class="cartao kpi ${destaque ? "destaque" : ""}" ${destino ? `data-a="ir" data-v="${destino}"` : ""}><span class="kpi-rot">${ICONES[ic] || ""}${rot}</span><b>${valor}</b>${sub ? `<small>${sub}</small>` : ""}</div>`;
+const cardCab = (titulo, extra = "") => `<div class="card-cab"><h3>${titulo}</h3>${extra}</div>`;
+const linkIr = (v, txt) => `<button class="link" data-a="ir" data-v="${v}">${txt}${ICONES.seta}</button>`;
+/** Menu "Mais" para ações que não são do dia a dia. */
+const menuMais = (itens, rotulo = "Mais") => `<details class="menu"><summary class="btn">${ICONES.pontos}${rotulo}</summary><div class="menu-itens">${itens}</div></details>`;
+document.addEventListener("click", (ev) => {
+  for (const d of document.querySelectorAll("details.menu[open]")) if (!d.contains(ev.target) || ev.target.closest("button.mi")) d.open = false;
+});
 const NAV = [
   ["painel", "📊", "Painel", "Painel"], ["conversas", "💬", "Conversas", "Conversas"], ["funil", "🧲", "Funil de clientes", "Funil"], ["aprovacoes", "🔔", "Aprovações", "Aprovações"],
   ["agenda", "📅", "Agenda", "Agenda"], ["catalogo", "📱", "Catálogo", "Catálogo"], ["ia", "🧠", "Cérebro da IA", "IA"], ["config", "⚙️", "Configurações", "Config"],
@@ -1264,7 +1485,8 @@ function contadores() {
 }
 function renderNav() {
   const n = contadores();
-  $("#nav").innerHTML = NAV.map(([v, ic, txt, curto]) => `<button data-a="ir" data-v="${v}" class="${rota.vista === v ? "ativo" : ""}" title="${txt}"><span class="ic">${ICONES[v] || ic}</span><span class="txt">${txt}</span><span class="curto">${curto}</span>${n[v] ? `<span class="selo">${n[v]}</span>` : ""}</button>`).join("");
+  const grupos = { painel: "Atendimento", catalogo: "Gestão" };
+  $("#nav").innerHTML = NAV.map(([v, ic, txt, curto]) => `${grupos[v] ? `<div class="nav-grupo">${grupos[v]}</div>` : ""}<button data-a="ir" data-v="${v}" class="${rota.vista === v ? "ativo" : ""}" title="${txt}"><span class="ic">${ICONES[v] || ic}</span><span class="txt">${txt}</span><span class="curto">${curto}</span>${n[v] ? `<span class="selo">${n[v]}</span>` : ""}</button>`).join("");
   const total = n.aprovacoes + n.conversas;
   document.title = `${total ? `(${total}) ` : ""}CRMY · ${S.config.marca.nome}`;
 }
@@ -1315,6 +1537,12 @@ function atualizarTela() {
 }
 
 const TELAS = {};
+/**
+ * Funil, painel e cartões mostram só quem quer COMPRAR aparelho (iPhone ou Android): compra e troca
+ * (usado como entrada). Reparo, pós-venda, fornecedor, pessoal e outros assuntos ficam só em Conversas.
+ * Quem ainda não tem etiqueta aparece até a IA etiquetar.
+ */
+const ehComprador = (c) => !c.categoria || c.categoria === "compra" || c.categoria === "troca";
 TELAS.login = () => `
   <div class="login-crmy">${LOGO_CRMY}
   <div class="cartao">
@@ -1326,21 +1554,22 @@ TELAS.login = () => `
     <button class="btn prim" data-a="entrar" style="width:100%;justify-content:center;margin-top:14px">Entrar</button>
     ${NUVEM.erro ? `<p class="erro-txt peq">${esc(NUVEM.erro)}</p>` : ""}
     ${SERVIDOR.login ? "" : `<p class="suave peq" style="text-align:center">O acesso é criado pelo dono no Supabase (Authentication &gt; Users).</p>`}
-    <button class="btn pq" data-a="diagnostico" style="width:100%;justify-content:center;margin-top:10px">🔍 Verificar configuração</button>
+    <button class="btn pq" data-a="diagnostico" style="width:100%;justify-content:center;margin-top:10px">Verificar configuração</button>
   </div></div>`;
 const DEPOIS = {};
 
 // ---------------------------------------------------------------- Painel
 TELAS.painel = () => {
+  const compradores = S.contatos.filter(ehComprador);
   const mes = agoraISO().slice(0, 7);
   const hojeIni = new Date(); hojeIni.setHours(0, 0, 0, 0);
   const hojeFim = new Date(hojeIni.getTime() + 86400000);
   const pend = S.aprovacoes.filter((a) => a.status === "pendente");
   const hoje = S.compromissos.filter((x) => x.status === "marcado" && deLocal(x.inicio) >= hojeIni && deLocal(x.inicio) < hojeFim).sort((a, b) => a.inicio.localeCompare(b.inicio));
-  const vendas = S.contatos.filter((c) => c.fechadoEm?.startsWith(mes)).length;
-  const ativos = S.contatos.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio)).length;
+  const vendas = compradores.filter((c) => c.fechadoEm?.startsWith(mes)).length;
+  const ativos = compradores.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio)).length;
   const uso = S.uso[mes];
-  const precisam = S.contatos.filter((c) => c.precisaDono || S.conv[c.id]?.rascunho || c.naoLidas);
+  const precisam = compradores.filter((c) => c.precisaDono || S.conv[c.id]?.rascunho || c.naoLidas);
   const comPreco = S.catalogo.filter((i) => i.ativo && i.preco).length, ativosCat = S.catalogo.filter((i) => i.ativo).length;
   const cfg = S.config;
   const passos = [
@@ -1351,28 +1580,51 @@ TELAS.painel = () => {
     [Boolean(S.estilo.guia), `Seu jeito de escrever (${S.estilo.pares.length} respostas suas guardadas)`, "Cérebro da IA > importe conversas do WhatsApp", "ia"],
     [Boolean(googleClientId()), "Google Agenda", googleClientId() ? "Configurações > Google Agenda" : "Falta GOOGLE_CLIENT_ID na Vercel", "config"],
     [Boolean(NUVEM.usuario), "Dados salvos na nuvem (Supabase)", "Configurações > Nuvem e acesso", "config"],
-    [false, "WhatsApp de verdade (próxima fase: precisa de um servidor)", "Por enquanto, teste no simulador em Conversas", "config"],
+    [Boolean(SERVIDOR.zap), "WhatsApp conectado (Z-API)", "Configurações > WhatsApp", "config"],
   ];
+  const feitos = passos.filter((p) => p[0]).length;
+  const h = Number(horaLocal(new Date()).slice(0, 2));
+  const saud = h >= 5 && h < 12 ? "Bom dia" : h >= 12 && h < 18 ? "Boa tarde" : "Boa noite";
+  const emAberto = compradores.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio)).reduce((t, c) => t + (Number(c.valor) || 0), 0);
+  const fuHoje = compradores.filter((c) => { const e = estadoFollowup(c); return e.situacao === "devido" || (e.situacao === "agendado" && e.devido <= hojeFim); }).length;
+  const motivo = (c) => c.precisaDono ? [esc(c.precisaDono), `<span class="etq vm">Chamou você</span>`]
+    : S.conv[c.id]?.rascunho ? ["Resposta da IA esperando revisão", `<span class="etq az">Revisar</span>`]
+    : [`${c.naoLidas} mensagem(ns) nova(s)`, `<span class="nl">${c.naoLidas}</span>`];
+  const comprando = compradores.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio)).sort((a, b) => (b.atualizadoEm || "").localeCompare(a.atualizadoEm || ""));
+  const corEstagio = { novo: "", atendimento: "az", aprovacao: "am", agendado: "az" };
+  const linhaComprador = (c) => `<div class="item" data-a="abrir-conv" data-id="${c.id}"><div class="avatar">${esc(iniciais(c.nome))}</div><div class="espaco"><b>${esc(nomeCli(c))}</b>${c.temperatura === "quente" ? ` <span class="etq vm">quente</span>` : ""}<div class="suave peq" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.interesse || "interesse ainda não anotado")}</div></div>${c.valor ? `<b class="valor-lista">${brl(c.valor)}</b>` : ""}<span class="etq ${corEstagio[c.estagio] || ""}">${esc(NOME_ESTAGIO[c.estagio] || c.estagio)}</span><span class="seta">${ICONES.seta}</span></div>`;
+  const passo = ([ok, txt, onde, v]) => `<div class="passo ${ok ? "feito" : ""}"><span class="bola">${ok ? ICONES.check : ""}</span><div class="espaco"><div>${esc(txt)}</div>${ok ? "" : `<div class="suave peq">${esc(onde)}</div>`}</div>${ok ? "" : `<button class="btn pq" data-a="ir" data-v="${v}">Abrir</button>`}</div>`;
   return `
-  <div class="linha"><div><h1>Olá${cfg.dono.nome ? `, ${esc(cfg.dono.nome.split(" ")[0])}` : ""} 👋</h1><div class="suave">${new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</div></div><span class="espaco"></span>
-  <button class="btn prim" data-a="cliente-teste">+ Simular cliente no WhatsApp</button></div>
-  <div class="aviso info" style="margin-top:12px">Agora: <b>${esc(MODOS_GERAIS[modoEfetivo(null)])}</b>${noturno() ? ` (horário noturno, até ${esc(S.config.atendimento.noiteFim)})` : ""}. <a href="/modo">Trocar no botão</a></div>
-  <h2>Hoje</h2>
+  ${cab(`${saud}${cfg.dono.nome ? `, ${esc(cfg.dono.nome.split(" ")[0])}` : ""}`, new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }).replace(/^./, (x) => x.toUpperCase()),
+    `${pillModo()}<button class="btn" data-a="cliente-teste">${ICONES.mais}Simular cliente</button>`)}
   <div class="grade kpis">
-    <div class="cartao kpi ${pend.length ? "destaque" : ""}" data-a="ir" data-v="aprovacoes" style="cursor:pointer"><b>${pend.length}</b><span>aprovações e decisões esperando você</span></div>
-    <div class="cartao kpi"><b>${hoje.length}</b><span>compromissos hoje</span></div>
-    <div class="cartao kpi" data-a="ir" data-v="funil" style="cursor:pointer"><b>${S.contatos.filter((c) => { const e = estadoFollowup(c); return e.situacao === "devido" || (e.situacao === "agendado" && e.devido <= hojeFim); }).length}</b><span>follow-ups para hoje</span></div>
-    <div class="cartao kpi"><b>${ativos}</b><span>negociações abertas</span></div>
-    <div class="cartao kpi"><b>${vendas}</b><span>vendas fechadas no mês</span></div>
-    <div class="cartao kpi"><b>${uso ? `US$ ${uso.custo.toFixed(2)}` : "US$ 0"}</b><span>gasto estimado com IA no mês${uso ? ` · ${uso.chamadas} chamadas` : ""}</span></div>
+    ${kpi("aprovacoes", "Aprovações", pend.length, pend.length ? "esperando você" : "nada pendente", { ir: "aprovacoes", destaque: pend.length })}
+    ${kpi("agenda", "Agenda hoje", hoje.length, hoje.length ? `próximo às ${hoje[0].inicio.slice(11, 16)}` : "agenda livre", { ir: "agenda" })}
+    ${kpi("relogio", "Follow-ups hoje", fuHoje, "reativar clientes", { ir: "funil" })}
+    ${kpi("usuarios", "Em negociação", ativos, emAberto ? `${brl(emAberto)} em aberto` : "", { ir: "funil" })}
+    ${kpi("trofeu", "Vendas no mês", vendas, "fechadas")}
+    ${kpi("chip", "Custo da IA", uso ? `US$ ${uso.custo.toFixed(2)}` : "US$ 0", uso ? `${uso.chamadas} chamadas` : "estimativa")}
   </div>
-  <div class="grade g2" style="margin-top:14px">
-    <div class="cartao"><h3>Precisa de você</h3><div class="lista">${precisam.length ? precisam.slice(0, 8).map((c) => `
-      <div class="item" data-a="abrir-conv" data-id="${c.id}" style="cursor:pointer"><div class="avatar">${esc(iniciais(c.nome))}</div><div class="espaco"><b>${esc(nomeCli(c))}</b><div class="suave peq">${c.precisaDono ? `🙋 ${esc(c.precisaDono)}` : S.conv[c.id]?.rascunho ? "✍️ Resposta da IA esperando revisão" : `💬 ${c.naoLidas} mensagem(ns) nova(s)`}</div></div></div>`).join("") : `<div class="vazio">Nada pendente. 🎉</div>`}</div></div>
-    <div class="cartao"><h3>Compromissos de hoje</h3><div class="lista">${hoje.length ? hoje.map((x) => `
-      <div class="item"><b style="color:var(--marca)">${x.inicio.slice(11, 16)}</b><div class="espaco"><b>${esc(TIPOS[x.tipo])}</b><div class="suave peq">${esc(nomeCli(contato(x.contatoId)))} · ${esc(x.local)}</div></div></div>`).join("") : `<div class="vazio">Nenhum compromisso hoje.</div>`}</div></div>
-    <div class="cartao"><h3>Configuração</h3>${passos.map(([ok, txt, onde, v]) => `<div class="check"><i>${ok ? "✅" : "⬜"}</i><div class="espaco"><div>${esc(txt)}</div><div class="suave peq">${esc(onde)}</div></div>${ok ? "" : `<button class="btn pq" data-a="ir" data-v="${v}">Abrir</button>`}</div>`).join("")}</div>
-    <div class="cartao"><h3>Atividade recente</h3><div class="lista">${S.log.length ? S.log.slice(0, 8).map((l) => `<div class="peq ${l.tipo === "erro" ? "erro-txt" : ""}">${dataCurta(l.em)} ${hora(l.em)} · ${esc(l.texto)}</div>`).join("") : `<div class="vazio">Sem atividade ainda.</div>`}</div></div>
+  <div class="painel-grade">
+    <div>
+      <div class="cartao">${cardCab(`Clientes comprando ${comprando.length ? `<span class="conta">${comprando.length}</span>` : ""}`, linkIr("funil", "Ver funil"))}
+        <div class="lista">${comprando.length ? comprando.slice(0, 12).map(linhaComprador).join("") : `<div class="vazio">Nenhum cliente comprando agora.</div>`}</div>
+        ${comprando.length > 12 ? `<div style="margin-top:10px">${linkIr("funil", `Ver os outros ${comprando.length - 12} no funil`)}</div>` : ""}</div>
+      <div class="cartao">${cardCab("Atividade recente")}
+        <div>${S.log.length ? S.log.slice(0, 10).map((l) => `<div class="ativ ${l.tipo === "erro" ? "erro" : ""}"><span class="quando">${dataCurta(l.em)} ${hora(l.em)}</span><span class="txt">${esc(l.texto)}</span></div>`).join("") : `<div class="vazio">Sem atividade ainda.</div>`}</div></div>
+    </div>
+    <div>
+      <div class="cartao">${cardCab(`Precisa de você ${precisam.length ? `<span class="conta">${precisam.length}</span>` : ""}`, linkIr("conversas", "Ver conversas"))}
+        <div class="lista">${precisam.length ? precisam.slice(0, 8).map((c) => { const [txt, chip] = motivo(c); return `
+        <div class="item" data-a="abrir-conv" data-id="${c.id}"><div class="avatar">${esc(iniciais(c.nome))}</div><div class="espaco"><b>${esc(nomeCli(c))}</b><div class="suave peq">${txt}</div></div>${chip}<span class="seta">${ICONES.seta}</span></div>`; }).join("") : `<div class="vazio">Tudo em dia. Nenhum cliente esperando você.</div>`}</div></div>
+      <div class="cartao">${cardCab("Compromissos de hoje", linkIr("agenda", "Agenda"))}
+        <div class="lista">${hoje.length ? hoje.map((x) => `
+        <div class="item"><b style="color:var(--marca);font-variant-numeric:tabular-nums">${x.inicio.slice(11, 16)}</b><div class="espaco"><b>${esc(TIPOS[x.tipo])}</b><div class="suave peq">${esc(nomeCli(contato(x.contatoId)))}${x.local ? ` · ${esc(x.local)}` : ""}</div></div></div>`).join("") : `<div class="vazio">Nenhum compromisso hoje.</div>`}</div></div>
+      <div class="cartao">${cardCab("Configuração", `<span class="suave peq">${feitos} de ${passos.length}</span>`)}
+        <div class="progresso"><i style="width:${Math.round((feitos / passos.length) * 100)}%"></i></div>
+        ${passos.filter((p) => !p[0]).map(passo).join("") || `<div class="suave peq">Tudo configurado.</div>`}
+        ${feitos ? `<details class="feitos"><summary>Ver ${feitos} concluído(s)</summary>${passos.filter((p) => p[0]).map(passo).join("")}</details>` : ""}</div>
+    </div>
   </div>`;
 };
 
@@ -1397,9 +1649,10 @@ TELAS.conversas = () => {
   const c = rota.id ? contato(rota.id) : null;
   return `<div class="conversas ${c ? "aberta" : ""}">
     <section class="conv-lista">
-      <header><div class="suave peq">Agora: ${esc(MODOS_GERAIS[modoEfetivo(null)])}${noturno() ? " · noite" : ""} · <a href="/modo">trocar</a></div><div class="linha"><h3 style="margin:0">Conversas</h3><span class="espaco"></span><button class="btn pq prim" data-a="cliente-teste">+ Cliente de teste</button></div>
+      <header><div class="linha"><h3 style="margin:0">Conversas</h3><span class="conta">${lista.length}</span><span class="espaco"></span><button class="btn pq" data-a="cliente-teste" title="Criar um cliente de teste para simular uma conversa">${ICONES.mais}Teste</button></div>
+      <div>${pillModo(true)}</div>
       <input type="search" id="busca-conv" data-manter placeholder="Buscar nome, número, interesse, etiqueta" value="${esc(buscaConv)}">
-      <div class="linha" style="margin-top:6px"><select data-a="filtro-categoria" style="flex:1"><option value="">🏷️ Todas as etiquetas</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${filtroCategoria === k ? "selected" : ""}>${v} (${S.contatos.filter((x) => x.categoria === k).length})</option>`).join("")}<option value="sem" ${filtroCategoria === "sem" ? "selected" : ""}>Sem etiqueta (${S.contatos.filter((x) => !x.categoria).length})</option></select><button class="btn pq" data-a="etiquetar" title="A IA etiqueta as conversas que ainda não têm etiqueta">🏷️ Etiquetar</button></div></header>
+      <div class="linha" style="margin-top:6px"><select data-a="filtro-categoria" style="flex:1"><option value="">Todas as etiquetas</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${filtroCategoria === k ? "selected" : ""}>${v} (${S.contatos.filter((x) => x.categoria === k).length})</option>`).join("")}<option value="sem" ${filtroCategoria === "sem" ? "selected" : ""}>Sem etiqueta (${S.contatos.filter((x) => !x.categoria).length})</option></select><button class="btn pq" data-a="etiquetar" title="A IA etiqueta as conversas que ainda não têm etiqueta">${ICONES.etiqueta}Etiquetar</button></div></header>
       <div class="conv-itens">${lista.length ? lista.map((x) => {
         const cv = S.conv[x.id];
         const ult = [...(cv?.mensagens || [])].reverse().find((m) => m.de !== "evento");
@@ -1426,7 +1679,7 @@ function telaChat(c) {
   }).join("");
   return `
   <div class="chat-topo">
-    <button class="btn pq voltar" data-a="ir" data-v="conversas">←</button>
+    <button class="btn pq ic-btn voltar" data-a="ir" data-v="conversas" title="Voltar">←</button>
     <div class="avatar">${esc(iniciais(c.nome))}</div>
     <div class="quem"><b>${esc(nomeCli(c))}</b><span class="suave peq">${c.telefone ? esc(fmtTelefone(c.telefone)) : "sem número"}${c.interesse ? ` · ${esc(c.interesse)}` : ""}</span></div>
     <button class="btn pq opcoes-chat" data-a="chat-opcoes" aria-expanded="${opcoesChat ? "true" : "false"}" title="Etiqueta, quem responde e fase">${opcoesChat ? "Fechar" : "Opções"}</button>
@@ -1434,23 +1687,26 @@ function telaChat(c) {
     <div class="chat-ctrl ${opcoesChat ? "aberto" : ""}">
     <select data-a="mudar-categoria" data-id="${c.id}" title="Etiqueta da conversa${c.categoriaMotivo ? `: ${esc(c.categoriaMotivo)}` : ""}"><option value="">${c.categoria && !c.categoriaManual ? `${CATEGORIAS[c.categoria]} (IA)` : "Etiqueta: a IA escolhe"}</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${c.categoriaManual && c.categoria === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     <select data-a="mudar-modo" data-id="${c.id}" title="Quem responde nesta conversa (agora: ${esc(MODOS_GERAIS[modoEfetivo(c)])})">${Object.entries(MODOS).map(([k, v]) => `<option value="${k}" ${c.modo === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-    ${!c.teste && (c.iaLiberada || !N.iaPodeAtender(c)) ? `<button class="btn pq ${c.iaLiberada ? "" : "ok"}" data-a="liberar-ia" data-id="${c.id}" title="${c.iaLiberada ? "A IA está liberada para este cliente" : "Cliente fora da regra da IA (antigo ou não veio de anúncio): só você responde"}">${c.iaLiberada ? "🔒 Bloquear IA" : "🔓 Liberar IA"}</button>` : ""}
+    ${!c.teste && (c.iaLiberada || !N.iaPodeAtender(c)) ? `<button class="btn pq ${c.iaLiberada ? "" : "ok"}" data-a="liberar-ia" data-id="${c.id}" title="${c.iaLiberada ? "A IA está liberada para este cliente" : "Cliente fora da regra da IA (antigo ou não veio de anúncio): só você responde"}">${c.iaLiberada ? `${ICONES.cadeado}Bloquear IA` : `${ICONES.aberto}Liberar IA`}</button>` : ""}
     <select data-a="mudar-estagio" data-id="${c.id}" title="Fase">${ESTAGIOS.map(([k, v]) => `<option value="${k}" ${c.estagio === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     </div>
   </div>
   ${c.precisaDono ? `<div class="aviso" style="margin:10px 14px 0">🙋 A IA chamou você: ${esc(c.precisaDono)} <button class="btn pq" data-a="resolver-dono" data-id="${c.id}">Resolvido</button></div>` : ""}
   <div class="msgs">${msgs || `<div class="vazio">Mande a primeira mensagem como se fosse o cliente (botão <b>Cliente</b> abaixo) para ver a IA atender.</div>`}${rodando.has(c.id) ? `<div class="digitando">${esc(S.config.marca.nomeIA)} está escrevendo</div>` : ""}</div>
-  ${conv.rascunho ? `<div class="rascunho"><div class="linha"><b>✍️ Sugestão da IA${conv.rascunhoFollowup ? ` · ⏰ follow-up ${conv.rascunhoFollowup}` : ""}</b><span class="suave peq">Edite se quiser. Suas mudanças ensinam a IA.${MARCA_AUDIO.test(conv.rascunho) || /\n\[(ÁUDIO|AUDIO)\]/i.test(conv.rascunho) ? " A parte com [ÁUDIO] vai como áudio com a sua voz." : ""}</span></div>
+  ${conv.rascunho ? `<div class="rascunho"><div class="linha"><b>${ICONES.ia}Sugestão da IA${conv.rascunhoFollowup ? ` · follow-up ${conv.rascunhoFollowup}` : ""}</b><span class="suave peq">Edite se quiser. Suas mudanças ensinam a IA.${MARCA_AUDIO.test(conv.rascunho) || /\n\[(ÁUDIO|AUDIO)\]/i.test(conv.rascunho) ? " A parte com [ÁUDIO] vai como áudio com a sua voz." : ""}</span></div>
     <textarea id="rascunho-${c.id}-${conv.rascunhoVer || 0}" data-manter>${esc(conv.rascunho)}</textarea>
     <div class="linha"><button class="btn ok" data-a="enviar-rascunho" data-id="${c.id}">Enviar ao cliente</button><button class="btn" data-a="descartar-rascunho" data-id="${c.id}">Descartar</button></div></div>` : ""}
   <div class="compor">
-    <div class="linha">${ehReal(c) ? `<span class="suave peq">📱 WhatsApp de verdade: o que você mandar aqui vai para o cliente.</span>` : `<span class="suave peq">Mandar como:</span>
+    <div class="linha">${ehReal(c) ? `<span class="suave peq">WhatsApp de verdade: o que você mandar aqui vai para o cliente.</span>` : `<span class="suave peq">Mandar como:</span>
       <div class="segm"><button class="${enviarComo === "cliente" ? "ativo" : ""}" data-a="como" data-v="cliente">Cliente (teste)</button><button class="${enviarComo === "dono" ? "ativo" : ""}" data-a="como" data-v="dono">Loja (você)</button></div>`}
       <span class="espaco"></span>
-      <button class="btn pq" data-a="pedir-sugestao" data-id="${c.id}" ${rodando.has(c.id) ? "disabled" : ""}>✨ Pedir sugestão à IA</button>
+      <button class="btn pq" data-a="pedir-sugestao" data-id="${c.id}" ${rodando.has(c.id) ? "disabled" : ""}>${ICONES.ia}Pedir sugestão à IA</button>
     </div>
     <div class="linha" style="flex-wrap:nowrap"><textarea id="texto-${c.id}" data-manter rows="1" placeholder="${enviarComo === "cliente" && !ehReal(c) ? "Escreva como se fosse o cliente…" : "Escreva sua resposta ao cliente…"}"></textarea>
-    ${enviarComo === "cliente" && !ehReal(c) && SERVIDOR.voz ? `<button class="btn ${gravacao?.id === c.id ? "gravando" : ""}" data-a="gravar" data-id="${c.id}" title="Gravar um áudio como se fosse o cliente">${gravacao?.id === c.id ? "⏹" : "🎤"}</button><label class="btn" title="Mandar um arquivo de áudio como cliente">📎<input type="file" id="arquivo-audio-${c.id}" accept="audio/*" hidden></label>` : ""}
+    ${gravacao?.id === c.id ? `<span class="etq vm" style="align-self:center">gravando… toque no quadrado para enviar</span>` : ""}
+    ${enviarComo === "cliente" && !ehReal(c)
+      ? (SERVIDOR.voz ? `<button class="btn ic-btn grande ${gravacao?.id === c.id ? "gravando" : ""}" data-a="gravar" data-id="${c.id}" title="Gravar um áudio como se fosse o cliente">${gravacao?.id === c.id ? ICONES.parar : ICONES.mic}</button><label class="btn ic-btn grande" title="Mandar um arquivo de áudio como cliente">${ICONES.clipe}<input type="file" id="arquivo-audio-${c.id}" accept="audio/*" hidden></label>` : "")
+      : `<button class="btn ic-btn grande ${gravacao?.id === c.id ? "gravando" : ""}" data-a="gravar" data-id="${c.id}" title="${gravacao?.id === c.id ? "Parar e enviar o áudio" : "Gravar um áudio e mandar ao cliente"}">${gravacao?.id === c.id ? ICONES.parar : ICONES.mic}</button><label class="btn ic-btn grande" title="Mandar um arquivo de áudio ao cliente">${ICONES.clipe}<input type="file" id="arquivo-loja-${c.id}" accept="audio/*" hidden></label>`}
     <button class="btn prim" data-a="enviar" data-id="${c.id}">Enviar</button></div>
   </div>`;
 }
@@ -1481,22 +1737,23 @@ function cartaoFunil(c, e) {
     ${c.valor ? `<div class="valor">${brl(c.valor)}</div>` : ""}
     ${c.categoria ? `<div class="tags" style="margin:2px 0">${chipCategoria(c)}</div>` : ""}<small>${esc(c.interesse || "sem interesse anotado")}</small>
     ${c.resumo ? `<p class="resumo">${esc(c.resumo)}</p>` : ""}
-    ${c.proximoPasso ? `<small>➡️ ${esc(c.proximoPasso)}</small>` : ""}
+    ${c.proximoPasso ? `<small>Próximo: ${esc(c.proximoPasso)}</small>` : ""}
     <div class="rodape-card">${rodapeFollowup(c, e)}${e.dias !== undefined && e.situacao !== "cliente-esperando" ? `<span class="etq">💤 ${tempoPassado(e.dias)} sem resposta</span>` : ""}</div>
     <div class="linha" style="margin-top:6px;gap:4px">
-      ${c.iaAtualizouEm ? `<small class="espaco">🤖 IA atualizou ${quandoRelativo(c.iaAtualizouEm).replace("hoje ", "às ")}</small>` : `<span class="espaco"></span>`}
-      ${podeFU && !rodando.has(c.id) ? `<button class="btn pq" data-a="fu-agora" data-id="${c.id}" title="Pedir à IA uma mensagem de follow-up agora">⏰</button>` : ""}
+      ${c.iaAtualizouEm ? `<small class="espaco">IA atualizou ${quandoRelativo(c.iaAtualizouEm).replace("hoje ", "às ")}</small>` : `<span class="espaco"></span>`}
+      ${podeFU && !rodando.has(c.id) ? `<button class="btn pq ic-btn" data-a="fu-agora" data-id="${c.id}" title="Pedir à IA uma mensagem de follow-up agora">${ICONES.relogio}</button>` : ""}
       <button class="btn pq" data-a="fu-pausar" data-id="${c.id}" title="${c.fu?.pausado ? "Retomar follow-up" : "Pausar follow-up deste cliente"}">${c.fu?.pausado ? "Retomar" : "Pausar"}</button>
-      <button class="btn pq" data-a="abrir-conv" data-id="${c.id}" title="Abrir conversa">💬</button>
+      <button class="btn pq ic-btn" data-a="abrir-conv" data-id="${c.id}" title="Abrir conversa">${ICONES.conversas}</button>
     </div>
   </div>`;
 }
 TELAS.funil = () => {
+  const compradores = S.contatos.filter(ehComprador);
   const agora = new Date();
-  const estados = Object.fromEntries(S.contatos.map((c) => [c.id, estadoFollowup(c, agora)]));
+  const estados = Object.fromEntries(compradores.map((c) => [c.id, estadoFollowup(c, agora)]));
   const fimHoje = new Date(); fimHoje.setHours(23, 59, 59, 999);
-  const fuHoje = S.contatos.filter((c) => { const e = estados[c.id]; return e.situacao === "devido" || (e.situacao === "agendado" && e.devido <= fimHoje); });
-  const esperando = S.contatos.filter((c) => estados[c.id].situacao === "cliente-esperando");
+  const fuHoje = compradores.filter((c) => { const e = estados[c.id]; return e.situacao === "devido" || (e.situacao === "agendado" && e.devido <= fimHoje); });
+  const esperando = compradores.filter((c) => estados[c.id].situacao === "cliente-esperando");
   const filtros = {
     todos: () => true,
     followup: (c) => fuHoje.includes(c),
@@ -1504,25 +1761,23 @@ TELAS.funil = () => {
     quentes: (c) => c.temperatura === "quente",
     parados: (c) => (estados[c.id].dias || 0) >= 3 && !["fechado", "perdido"].includes(c.estagio),
   };
-  const visiveis = S.contatos.filter(filtros[filtroFunil] || filtros.todos).filter((c) => !buscaFunil || `${c.nome} ${c.telefone} ${c.interesse} ${c.resumo}`.toLowerCase().includes(buscaFunil.toLowerCase()));
+  const visiveis = compradores.filter(filtros[filtroFunil] || filtros.todos).filter((c) => !buscaFunil || `${c.nome} ${c.telefone} ${c.interesse} ${c.resumo}`.toLowerCase().includes(buscaFunil.toLowerCase()));
   const f = S.config.followup;
-  const abertos = S.contatos.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio));
+  const abertos = compradores.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio));
   return `
-  <div class="linha"><h1>Funil de clientes</h1><span class="espaco"></span>
-    <button class="btn" data-a="fu-regras">⚙️ Regras de follow-up</button>
-    <button class="btn" data-a="novo-contato">+ Novo cliente</button></div>
-  <p class="suave peq">A IA move os cartões e atualiza temperatura, valor, próximo passo e resumo conforme a conversa anda. Você também pode arrastar. Cartão com brilho = a IA acabou de mexer.</p>
-  <div class="grade kpis" style="margin:12px 0">
-    <div class="cartao kpi"><b>${brl(abertos.reduce((t, c) => t + (Number(c.valor) || 0), 0))}</b><span>em negociação · ${abertos.length} em aberto</span></div>
-    <div class="cartao kpi ${fuHoje.length ? "destaque" : ""}"><b>${fuHoje.length}</b><span>follow-ups para hoje</span></div>
-    <div class="cartao kpi"><b>${esperando.length}</b><span>clientes esperando resposta</span></div>
-    <div class="cartao kpi"><b>${f.ativo ? "Ligado" : "Desligado"}</b><span>follow-up automático · ${esc(cadencia().join(", "))} dia(s)</span></div>
+  ${cab("Funil de clientes", "Só clientes que querem comprar iPhone ou Android. Reparo e outros assuntos ficam em Conversas. A IA move os cartões conforme a conversa anda.",
+    `<button class="btn" data-a="fu-regras">${ICONES.config}Regras de follow-up</button><button class="btn prim" data-a="novo-contato">${ICONES.mais}Novo cliente</button>`)}
+  <div class="grade kpis">
+    ${kpi("dinheiro", "Em negociação", brl(abertos.reduce((t, c) => t + (Number(c.valor) || 0), 0)), `${abertos.length} em aberto`)}
+    ${kpi("relogio", "Follow-ups hoje", fuHoje.length, "para reativar", { destaque: fuHoje.length })}
+    ${kpi("conversas", "Esperando resposta", esperando.length, "clientes")}
+    ${kpi("atualizar", "Follow-up automático", f.ativo ? "Ligado" : "Desligado", `${esc(cadencia().join(", "))} dia(s)`)}
   </div>
-  <div class="linha" style="margin-bottom:12px">
-    <div class="segm">${[["todos", "Todos"], ["followup", `Follow-up hoje (${fuHoje.length})`], ["esperando", `Esperando resposta (${esperando.length})`], ["quentes", "🔥 Quentes"], ["parados", "Parados 3+ dias"]].map(([k, t]) => `<button class="${filtroFunil === k ? "ativo" : ""}" data-a="filtro-funil" data-v="${k}">${t}</button>`).join("")}</div>
+  <div class="filtros">
+    <div class="segm">${[["todos", "Todos"], ["followup", `Follow-up hoje (${fuHoje.length})`], ["esperando", `Esperando resposta (${esperando.length})`], ["quentes", "Quentes"], ["parados", "Parados 3+ dias"]].map(([k, t]) => `<button class="${filtroFunil === k ? "ativo" : ""}" data-a="filtro-funil" data-v="${k}">${t}</button>`).join("")}</div>
     <input type="search" id="busca-funil" data-manter placeholder="Buscar no funil" value="${esc(buscaFunil)}" style="max-width:240px">
     <span class="espaco"></span>
-    ${fuHoje.some((c) => estados[c.id].situacao === "devido") ? `<button class="btn prim" data-a="fu-todos">⏰ Fazer follow-ups devidos agora</button>` : ""}
+    ${fuHoje.some((c) => estados[c.id].situacao === "devido") ? `<button class="btn prim" data-a="fu-todos">Fazer follow-ups devidos agora</button>` : ""}
   </div>
   <div class="funil">${ESTAGIOS.map(([k, nome]) => {
     const cs = visiveis.filter((c) => c.estagio === k).sort((a, b) => (b.atualizadoEm || "").localeCompare(a.atualizadoEm || ""));
@@ -1535,44 +1790,49 @@ TELAS.funil = () => {
 TELAS.aprovacoes = () => {
   const pend = S.aprovacoes.filter((a) => a.status === "pendente");
   const hist = S.aprovacoes.filter((a) => a.status !== "pendente" && a.status !== "descartada").slice(-20).reverse();
+  const meta = (linhas) => `<dl class="meta">${linhas.filter(([, v]) => v).map(([r, v]) => `<dt>${r}</dt><dd>${v}</dd>`).join("")}</dl>`;
+  const excluir = (a) => `<button class="btn ic-btn grande fantasma direita" data-a="excluir-pedido" data-id="${a.id}" title="Excluir sem responder (o cliente não é avisado)" aria-label="Excluir">${ICONES.lixo}</button>`;
   const cartao = (a) => {
     const c = contato(a.contatoId);
+    const cli = `<a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a>`;
+    const topo = (tipo, corTipo, st, corSt) => `<div class="aprov-topo"><span class="etq ${corTipo}">${tipo}</span><b class="espaco">#${a.codigo} · ${esc(a.produto)}</b><span class="etq ${corSt}">${st}</span>${a.criadaEm ? `<span class="suave peq">${quandoRelativo(a.criadaEm)}</span>` : ""}</div>`;
     if (a.tipo === "desconto") return `<div class="cartao cartao-aprov ${a.status}">
-      <div class="linha"><b>💸 #${a.codigo} · Desconto · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm"}">${a.status === "pendente" ? "decidir" : a.status === "aprovada" ? "liberado" : "negado"}</span></div>
-      <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · 💰 de ${brl(a.valorAtual)} para <b>${brl(a.valor)}</b>${a.pagamento ? ` · ${esc(a.pagamento)}` : ""}<br>📝 ${esc(a.resumo || "-")}${a.valorFinal ? `<br>Liberado por: <b>${brl(a.valorFinal)}</b>` : ""} · o cliente não foi avisado do pedido</div>
-      ${a.status === "pendente" ? `<div class="linha">
-        <button class="btn ok" data-a="aprovar" data-id="${a.id}">✅ Liberar ${brl(a.valor)}</button>
+      ${topo("Desconto", "az", a.status === "pendente" ? "Decidir" : a.status === "aprovada" ? "Liberado" : "Negado", a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm")}
+      ${meta([["Cliente", cli], ["Pedido", `de ${brl(a.valorAtual)} para <b>${brl(a.valor)}</b>`], ["Pagamento", esc(a.pagamento || "")], ["Resumo", esc(a.resumo || "")], ["Liberado por", a.valorFinal ? `<b>${brl(a.valorFinal)}</b>` : ""]])}
+      ${a.status === "pendente" ? `<p class="suave peq" style="margin:-6px 0 12px">O cliente não foi avisado deste pedido.</p><div class="aprov-acoes">
+        <button class="btn ok" data-a="aprovar" data-id="${a.id}">${ICONES.check}Liberar ${brl(a.valor)}</button>
         <input type="number" id="valor-${a.id}" data-manter placeholder="Outro valor (R$)" style="width:150px">
         <button class="btn" data-a="aprovar-valor" data-id="${a.id}">Liberar com este valor</button>
-        <button class="btn perigo" data-a="recusar" data-id="${a.id}">⛔ Não dar desconto</button>
-        <button class="btn pq" data-a="excluir-pedido" data-id="${a.id}" title="Some da lista sem responder e sem avisar o cliente">🗑️ Excluir</button>
+        <button class="btn perigo" data-a="recusar" data-id="${a.id}">Não dar desconto</button>
+        ${excluir(a)}
       </div>` : ""}
     </div>`;
     if (a.tipo === "decisao") return `<div class="cartao cartao-aprov ${a.status === "pendente" ? "pendente" : "aprovada"}">
-      <div class="linha"><b>🤔 #${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : "vd"}">${a.status === "pendente" ? "decidir" : "decidida"}</span></div>
-      <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · ⚠️ ${esc(a.situacao)}${a.temos ? `<br>📦 Temos: ${esc(a.temos)}` : ""}${a.sugestao ? `<br>💡 Sugestão da IA: ${esc(a.sugestao)}` : ""}${a.resumo ? `<br>📝 ${esc(a.resumo)}` : ""}${a.comentario ? `<br>Você decidiu: <b>${esc(a.comentario)}</b>` : ""}</div>
-      ${a.status === "pendente" ? `<div class="linha"><input type="text" id="decisao-${a.id}" data-manter placeholder="O que fazer? ex.: encomenda 7 dias 4.300 · oferece o azul · não trabalhamos" style="flex:1;min-width:220px"><button class="btn prim" data-a="decidir" data-id="${a.id}">Responder</button><button class="btn pq" data-a="excluir-pedido" data-id="${a.id}" title="Some da lista sem responder e sem avisar o cliente">🗑️ Excluir</button></div>` : ""}
+      ${topo("Decisão", "am", a.status === "pendente" ? "Decidir" : "Decidida", a.status === "pendente" ? "am" : "vd")}
+      ${meta([["Cliente", cli], ["Situação", esc(a.situacao || "")], ["Temos", esc(a.temos || "")], ["Sugestão da IA", esc(a.sugestao || "")], ["Resumo", esc(a.resumo || "")], ["Você decidiu", a.comentario ? `<b>${esc(a.comentario)}</b>` : ""]])}
+      ${a.status === "pendente" ? `<div class="aprov-acoes"><input type="text" id="decisao-${a.id}" data-manter placeholder="O que fazer? ex.: encomenda 7 dias 4.300 · oferece o azul · não trabalhamos" style="flex:1;min-width:220px"><button class="btn prim" data-a="decidir" data-id="${a.id}">Responder</button>${excluir(a)}</div>` : ""}
     </div>`;
+    const nomeSt = { pendente: "Pendente", aprovada: "Aprovada", recusada: "Recusada" };
     return `<div class="cartao cartao-aprov ${a.status}">
-      <div class="linha"><b>#${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm"}">${a.status}</span></div>
-      <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · 💰 ${a.valor ? brl(a.valor) : "sem preço"} · ${esc(a.pagamento)} · 🚚 ${esc(a.entrega)}<br>📝 ${esc(a.resumo)}${a.valorFinal && a.valorFinal !== a.valor ? `<br>Valor final: <b>${brl(a.valorFinal)}</b>` : ""}${a.comentario ? `<br>Você disse: ${esc(a.comentario)}` : ""}</div>
-      ${a.status === "pendente" ? `<div class="linha">
-        <button class="btn ok" data-a="aprovar" data-id="${a.id}">✅ Tem, valor certo</button>
+      ${topo("Venda", "", nomeSt[a.status] || a.status, a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm")}
+      ${meta([["Cliente", cli], ["Valor", a.valor ? `<b>${brl(a.valor)}</b>` : "sem preço"], ["Pagamento", esc(a.pagamento || "")], ["Entrega", esc(a.entrega || "")], ["Resumo", esc(a.resumo || "")], ["Valor final", a.valorFinal && a.valorFinal !== a.valor ? `<b>${brl(a.valorFinal)}</b>` : ""], ["Você disse", esc(a.comentario || "")]])}
+      ${a.status === "pendente" ? `<div class="aprov-acoes">
+        <button class="btn ok" data-a="aprovar" data-id="${a.id}">${ICONES.check}Tem, valor certo</button>
         <input type="number" id="valor-${a.id}" data-manter placeholder="Valor certo (R$)" style="width:150px">
         <button class="btn" data-a="aprovar-valor" data-id="${a.id}">Aprovar com este valor</button>
-        <button class="btn perigo" data-a="recusar" data-id="${a.id}">⛔ Não tem</button>
-        <button class="btn pq" data-a="excluir-pedido" data-id="${a.id}" title="Some da lista sem responder e sem avisar o cliente">🗑️ Excluir</button>
+        <button class="btn perigo" data-a="recusar" data-id="${a.id}">Não tem</button>
+        ${excluir(a)}
       </div><input type="text" id="coment-${a.id}" data-manter placeholder="Comentário para a IA (opcional): ex. só tem na cor azul" style="margin-top:8px">` : ""}
       ${a.status === "aprovada" && a.idCatalogo && a.valorFinal && S.catalogo.find((i) => i.id === a.idCatalogo && i.origem !== "site" && Number(i.preco) !== Number(a.valorFinal)) ? `<button class="btn pq" style="margin-top:8px" data-a="salvar-preco" data-id="${a.id}">Salvar ${brl(a.valorFinal)} no catálogo (${esc(a.idCatalogo)})</button>` : ""}
     </div>`;
   };
-  return `<h1>Aprovações</h1>
-  <p class="suave peq">Antes de fechar qualquer venda, a IA pergunta para você se tem em estoque e se o valor está certo. Quando o cliente pede um modelo ou cor que não está no estoque, ela abre uma 🤔 decisão para você dizer o que fazer. Responda aqui ou no "WhatsApp do dono" ao lado, como você responderia no celular.</p>
+  return `${cab("Aprovações", "Estoque, preço, desconto e decisões que a IA precisa de você antes de fechar. Responda aqui ou pelo WhatsApp ao lado.",
+    `<span class="pill"><span class="ponto ${pend.length ? "alerta" : "ok"}"></span>${pend.length ? `${pend.length} pendente(s)` : "Nada pendente"}</span>`)}
   <div class="aprov">
-    <div><div class="grade">${pend.length ? pend.map(cartao).join("") : `<div class="cartao vazio">Nenhuma aprovação esperando. 👍</div>`}</div>
+    <div>${pend.length ? `<h2 style="margin-top:0">Pendentes</h2>` : ""}<div class="grade">${pend.length ? pend.map(cartao).join("") : `<div class="cartao vazio">Nenhuma aprovação esperando.</div>`}</div>
     ${hist.length ? `<h2>Respondidas</h2><div class="grade">${hist.map(cartao).join("")}</div>` : ""}</div>
     <div class="celular">
-      <header><div class="avatar">🤖</div><div><b>${esc(S.config.marca.nomeIA)}</b><div class="suave peq">no seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : ""}${SERVIDOR.zap ? "" : " · simulado"}</div></div></header>
+      <header><div class="avatar">${ICONES.ia}</div><div><b>${esc(S.config.marca.nomeIA)}</b><div class="suave peq">no seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : ""}${SERVIDOR.zap ? "" : " · simulado"}</div></div></header>
       <div class="msgs">${S.donoZap.length ? S.donoZap.slice(-60).map((m) => `<div class="bolha ${m.de === "dono" ? "loja" : "cliente"}">${fmtZap(m.texto)}<span class="hora">${hora(m.em)}</span></div>`).join("") : `<div class="vazio">Os pedidos de aprovação da IA chegam aqui.</div>`}</div>
       <footer><input type="text" id="zap-dono" data-manter placeholder="sim · A2 não · manda pro João que o 15 chegou · muda para eu respondo"><button class="btn prim" data-a="zap-dono">➤</button></footer>
     </div>
@@ -1589,11 +1849,10 @@ TELAS.agenda = () => {
     ...(eventosG || []).filter((e) => !S.compromissos.some((x) => x.gcalId === e.gid)).map((e) => ({ tipo: "google", quando: new Date(e.inicio), e })),
   ].sort((a, b) => a.quando - b.quando);
   const semSync = S.compromissos.filter((x) => !x.gcalId && x.status === "marcado" && deLocal(x.inicio) > new Date()).length;
-  return `<div class="linha"><h1>Agenda</h1><span class="espaco"></span>
-    ${googleClientId() ? (googleConectado() ? `<span class="etq vd">Google Agenda conectado</span>${semSync ? `<button class="btn pq" data-a="sincronizar">Enviar ${semSync} ao Google</button>` : ""}` : `<button class="btn" data-a="conectar-google">Conectar Google Agenda</button>`) : `<span class="etq">Google Agenda não configurado</span>`}
-    <button class="btn prim" data-a="novo-compromisso">+ Compromisso</button></div>
-  ${erroG ? `<div class="aviso" style="margin-top:10px">${esc(erroG)}</div>` : ""}
-  <p class="suave peq">Próximos 14 dias. A IA consulta esta agenda${googleConectado() ? " e o seu Google Agenda" : ""} antes de propor horários. Os eventos pontilhados são do seu Google Agenda.</p>
+  return `${cab("Agenda", `Próximos 14 dias. A IA consulta esta agenda${googleConectado() ? " e o seu Google Agenda" : ""} antes de propor horários.`, `
+    ${googleClientId() ? (googleConectado() ? `<span class="pill"><span class="ponto ok"></span>Google Agenda conectado</span>${semSync ? `<button class="btn pq" data-a="sincronizar">Enviar ${semSync} ao Google</button>` : ""}` : `<button class="btn" data-a="conectar-google">Conectar Google Agenda</button>`) : `<span class="etq">Google Agenda não configurado</span>`}
+    <button class="btn prim" data-a="novo-compromisso">${ICONES.mais}Compromisso</button>`)}
+  ${erroG ? `<div class="aviso" style="margin-bottom:14px">${esc(erroG)}</div>` : ""}
   ${dias.map((d) => {
     const doDia = itens.filter((i) => dataLocalISO(i.quando) === dataLocalISO(d));
     return `<div class="dia"><b>${d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" })}</b>${doDia.length ? doDia.map((i) => i.tipo === "crm" ? `
@@ -1616,15 +1875,16 @@ TELAS.catalogo = () => {
   const semPreco = S.catalogo.filter((i) => i.ativo && !i.preco).length;
   const doSite = S.catalogo.filter((i) => i.origem === "site").length;
   const imp = S.config.importacao;
-  return `<div class="linha"><h1>Catálogo</h1><span class="espaco"></span>
-    ${imp.fonte ? `<button class="btn" data-a="importar-site">🔄 Atualizar do site</button>` : ""}
-    <button class="btn" data-a="cat-colar">✨ Colar lista (a IA organiza)</button>
-    <button class="btn" data-a="cat-csv-exportar">Exportar planilha</button>
-    <label class="btn">Importar planilha<input type="file" accept=".csv,text/csv" id="cat-csv" hidden></label>
-    <button class="btn prim" data-a="cat-novo">+ Item</button></div>
-  <p class="suave peq">É daqui que a IA tira os preços. Item <b>sem preço</b> ou com estoque <b>a confirmar</b>: a IA pergunta para você antes de passar valor. Mesmo com tudo preenchido, ela sempre confirma com você antes de fechar a venda.${semPreco ? ` <b style="color:var(--alerta)">${semPreco} itens ativos estão sem preço.</b>` : ""}</p>
+  return `${cab("Catálogo", "É daqui que a IA tira os preços. Item sem preço ou com estoque a confirmar: ela pergunta para você antes de passar valor.", `
+    ${imp.fonte ? `<button class="btn" data-a="importar-site">${ICONES.atualizar}Atualizar do site</button>` : ""}
+    ${menuMais(`<button class="mi" data-a="cat-colar">${ICONES.colar}Colar lista (a IA organiza)</button>
+      <button class="mi" data-a="cat-csv-exportar">${ICONES.baixar}Exportar planilha</button>
+      <label class="mi">${ICONES.subir}Importar planilha<input type="file" accept=".csv,text/csv" id="cat-csv" hidden></label>
+      <hr><button class="mi" data-a="cat-pronto">${ICONES.atualizar}Restaurar catálogo pronto de iPhones</button>`)}
+    <button class="btn prim" data-a="cat-novo">${ICONES.mais}Item</button>`)}
+  ${semPreco ? `<p class="aviso" style="margin:0 0 12px"><b>${semPreco} itens ativos estão sem preço.</b> A IA vai perguntar o valor para você antes de passar ao cliente.</p>` : ""}
   ${doSite ? `<p class="aviso info"><b>${doSite} itens vêm do site da loja</b>${imp.ultimaEm ? `, atualizados ${quandoRelativo(imp.ultimaEm)}` : ""}. Preço, foto, cor e disponibilidade se mudam no admin do site: aqui eles atualizam sozinhos${imp.auto ? " (a cada 30 minutos com o app aberto)" : ""}. Nesses itens você só pode desligar para a IA não oferecer.</p>` : ""}
-  <div class="linha" style="margin:10px 0"><input type="search" id="busca-cat" data-manter placeholder="Buscar modelo, cor, id…" value="${esc(buscaCat)}" style="max-width:320px"><span class="espaco"></span><button class="btn pq" data-a="cat-pronto">Restaurar catálogo pronto de iPhones</button></div>
+  <div class="linha" style="margin:10px 0"><input type="search" id="busca-cat" data-manter placeholder="Buscar modelo, cor, id…" value="${esc(buscaCat)}" style="max-width:320px"><span class="espaco"></span><span class="suave peq">${lista.length} itens</span></div>
   <div class="tabela-wrap"><table><thead><tr><th>Ativo</th><th>Foto</th><th>Id</th><th>Modelo</th><th>Armaz.</th><th>Cor</th><th>Condição</th><th>Bateria</th><th>Preço</th><th>À vista Pix</th><th>Estoque</th><th>Garantia</th><th>Observação</th><th></th></tr></thead><tbody>
   ${lista.map((i) => { const bl = i.origem === "site" ? " disabled" : ""; return `<tr class="${i.ativo ? "" : "inativo"} ${i.origem === "site" ? "do-site" : ""}" data-item="${i.id}">
     <td><input type="checkbox" data-campo="ativo" ${i.ativo ? "checked" : ""}></td>
@@ -1648,11 +1908,11 @@ TELAS.catalogo = () => {
 TELAS.ia = () => {
   const e = S.estilo;
   const doCrm = e.pares.filter((p) => p.origem === "crm").length;
-  return `<h1>Cérebro da IA</h1>
-  <p class="suave">Aqui você cria a inteligência da sua IA: o que ela deve fazer e como ela escreve. Ela aprende o seu jeito com as suas conversas reais do WhatsApp e com cada correção que você faz nas sugestões dela.</p>
+  return `${cab("Cérebro da IA", "O que a IA deve fazer e como ela escreve. Ela aprende o seu jeito com as suas conversas do WhatsApp e com cada correção que você faz.",
+    `<button class="btn" data-a="ver-prompt">Ver tudo que a IA recebe</button>`)}
   <h2>Instruções de venda</h2>
   <div class="cartao"><textarea id="ia-instrucoes" rows="12">${esc(S.config.ia.instrucoes)}</textarea>
-  <div class="linha" style="margin-top:8px"><button class="btn prim" data-a="salvar-instrucoes">Salvar instruções</button><button class="btn" data-a="ver-prompt">Ver tudo que a IA recebe</button><span class="suave peq">As regras de aprovação e agenda já vêm prontas e não podem ser desligadas.</span></div></div>
+  <div class="linha" style="margin-top:8px"><button class="btn prim" data-a="salvar-instrucoes">Salvar instruções</button><span class="suave peq">As regras de aprovação e agenda já vêm prontas e não podem ser desligadas.</span></div></div>
 
   ${painelInspetor()}
 
@@ -1666,7 +1926,7 @@ TELAS.ia = () => {
     </div>
     <div class="cartao"><h3>2. A IA estuda o seu jeito</h3>
       <p class="suave peq">Ela lê as suas respostas e escreve um guia de estilo (tom, tamanho das mensagens, gírias, emojis, como você fala de preço) e escolhe as respostas mais típicas como exemplo. Refaça de vez em quando: as correções que você fizer entram no próximo estudo.</p>
-      <button class="btn prim" data-a="estudar-estilo" ${e.pares.length < 5 ? "disabled" : ""}>🧠 Estudar meu jeito de escrever</button>
+      <button class="btn prim" data-a="estudar-estilo" ${e.pares.length < 5 ? "disabled" : ""}>Estudar meu jeito de escrever</button>
       ${e.pares.length < 5 ? `<p class="suave peq">Importe pelo menos algumas conversas antes.</p>` : ""}
       ${e.atualizadoEm ? `<p class="suave peq">Último estudo: ${dataHora(e.atualizadoEm)}</p>` : ""}
     </div>
@@ -1688,12 +1948,12 @@ function painelInspetor() {
       <p class="suave peq" style="margin:6px 0">${esc(m.por_que)}</p>
       <p class="peq" style="margin:6px 0">📌 <b>Regra:</b> ${esc(m.regra)}</p>
       ${m.antes || m.depois ? `<div class="grade g2" style="margin-top:6px">${m.antes ? `<div class="exemplo"><div class="c">Como a IA fez</div><div class="d">${esc(m.antes)}</div></div>` : ""}${m.depois ? `<div class="exemplo"><div class="c">Como deveria</div><div class="d">${esc(m.depois)}</div></div>` : ""}</div>` : ""}
-      ${m.status === "nova" ? `<div class="linha" style="margin-top:8px"><button class="btn ok pq" data-a="aplicar-melhoria" data-i="${ult.id}" data-id="${m.id}">✅ Aplicar nas instruções</button><button class="btn pq" data-a="ignorar-melhoria" data-i="${ult.id}" data-id="${m.id}">Ignorar</button></div>` : ""}
+      ${m.status === "nova" ? `<div class="linha" style="margin-top:8px"><button class="btn ok pq" data-a="aplicar-melhoria" data-i="${ult.id}" data-id="${m.id}">Aplicar nas instruções</button><button class="btn pq" data-a="ignorar-melhoria" data-i="${ult.id}" data-id="${m.id}">Ignorar</button></div>` : ""}
     </div>`;
-  return `<h2>🔍 Inspetor de vendas</h2>
+  return `<h2>Inspetor de vendas</h2>
   <div class="cartao">
     <p class="suave peq" style="margin-top:0">Um especialista em fechamento de vendas e negociação lê as últimas ${esc(cfg.conversas || 3)} conversas da IA, junto com os números do funil deste ano, e sugere melhorias. Você escolhe quais entram nas instruções.</p>
-    <div class="linha"><button class="btn prim" data-a="inspecionar">🔍 Inspecionar agora</button>
+    <div class="linha"><button class="btn prim" data-a="inspecionar">Inspecionar agora</button>
       <label class="linha" style="cursor:pointer"><input type="checkbox" data-a="inspetor-auto" ${cfg.auto ? "checked" : ""}> Inspecionar sozinho 1x por dia (se tiver conversa nova) e me mandar o resumo no WhatsApp</label></div>
     ${ult ? `<div style="margin-top:14px">
       <div class="linha"><b style="font-size:1.3em">${ult.nota}/10</b><span class="suave peq">Inspeção de ${dataHora(ult.em)} · conversas: ${ult.conversas.map((c) => `<a href="#conversas/${c.id}">${esc(c.nome)}</a>`).join(", ")}</span></div>
@@ -1724,9 +1984,9 @@ TELAS.config = () => {
     porAba[(ABAS_CONFIG.find((a) => a[3].includes(titulo)) || ABAS_CONFIG.at(-1))[0]].push(p);
   }
   if (!porAba[abaConfig]) abaConfig = "loja";
-  return `<h1>Configurações</h1>
+  return `${cab("Configurações", "Loja, WhatsApp, IA, voz, agenda e acesso.")}
   <div class="cfg">
-    <div class="cfg-abas" role="tablist">${ABAS_CONFIG.map(([id, ic, nome]) => `<button role="tab" data-a="aba-config" data-v="${id}" class="${abaConfig === id ? "ativo" : ""}">${ic} ${nome}</button>`).join("")}</div>
+    <div class="cfg-abas" role="tablist">${ABAS_CONFIG.map(([id, ic, nome]) => `<button role="tab" data-a="aba-config" data-v="${id}" class="${abaConfig === id ? "ativo" : ""}">${nome}</button>`).join("")}</div>
     <div class="cfg-corpo">${ABAS_CONFIG.map(([id]) => `<section data-aba="${id}" ${abaConfig === id ? "" : "hidden"}>${porAba[id].join("")}${id !== "conta" ? `<div class="linha" style="margin-top:18px"><button class="btn prim" data-a="salvar-config">Salvar configurações</button></div>` : ""}</section>`).join("")}</div>
   </div>`;
 };
@@ -1809,14 +2069,14 @@ function configSecoes() {
       <label class="campo largo"><span>Endereço dos dados do site <small>(o arquivo data/catalogo.json)</small></span><input type="url" id="c-importacao-fonte" value="${esc(S.config.importacao.fonte)}"></label>
       <label class="linha largo" style="cursor:pointer"><input type="checkbox" id="c-importacao-auto" ${S.config.importacao.auto ? "checked" : ""}> Atualizar sozinho (ao abrir o app e a cada 30 minutos)</label>
     </div>
-    <div class="linha" style="margin-top:12px"><button class="btn prim" data-a="importar-site">🔄 Importar agora</button>${S.siteDados ? `<button class="btn" data-a="ver-site">Ver o que a IA sabe do site</button>` : ""}
+    <div class="linha" style="margin-top:12px"><button class="btn prim" data-a="importar-site">Importar agora</button>${S.siteDados ? `<button class="btn" data-a="ver-site">Ver o que a IA sabe do site</button>` : ""}
     <span class="suave peq">${S.config.importacao.ultimaEm ? `Última importação: ${dataHora(S.config.importacao.ultimaEm)} · ${esc(S.config.importacao.resumo)}` : "Ainda não importado."}</span></div>
   </div>
 
   <h2>WhatsApp</h2>
   <div class="cartao">${SERVIDOR.zap ? `
     <p class="aviso info" style="margin-top:0">✓ <b>WhatsApp conectado pela Z-API.</b> O servidor atende 24 horas, mesmo com o CRM fechado: das ${esc(S.config.atendimento.noiteInicio)} às ${esc(S.config.atendimento.noiteFim)} a IA responde sozinha; de dia vale o botão em <a href="/modo">/modo</a>. Pedidos de aprovação vão para o seu WhatsApp${S.config.dono.whatsapp ? ` (+${esc(soDigitos(S.config.dono.whatsapp))})` : " (cadastre o seu número em Dono)"}: responda <b>sim</b>, <b>não</b> ou <b>sim 3799</b>.</p>
-    ${SERVIDOR.zapOmni ? `<div class="linha"><button class="btn prim" data-a="ligar-zap">🔗 Ligar mensagens no CRM</button><button class="btn" data-a="estado-zap">Conferir conexão</button><span class="suave peq" id="estado-zap"></span></div>
+    ${SERVIDOR.zapOmni ? `<div class="linha"><button class="btn prim" data-a="ligar-zap">Ligar mensagens no CRM</button><button class="btn" data-a="estado-zap">Conferir conexão</button><span class="suave peq" id="estado-zap"></span></div>
     <p class="suave peq">Omni Z-API: o botão cadastra no Omni o endereço deste CRM para receber as mensagens. Toque de novo se trocar a ZAPI_WEBHOOK_SEGREDO.</p>` : `<p class="suave peq">Endereço que fica cadastrado na Z-API (em "Ao receber" e em "Enviadas por mim"): <b>${esc(location.origin)}/api/whatsapp?chave=</b> + o valor da variável ZAPI_WEBHOOK_SEGREDO.</p>`}
     <p class="suave peq"><b>Ordens pelo WhatsApp:</b> do seu WhatsApp pessoal (o de Configurações > Dono) para o número da loja, em texto ou áudio, você responde aprovações e manda ordens. Ex.: "manda pro Marcos que o 15 chegou", "manda exatamente: separei o teu aqui", "chama o 48 99999-0000 e oferece o 13", "deixa a IA responder sozinha", "pausa a IA na conversa da Carla", "o 13 de 128 agora é 2.599", "como tá a conversa com o João?".</p>
     <p class="suave peq">Quando você responde um cliente pelo celular, a IA fica quieta naquela conversa por ${esc(S.config.atendimento.pausaAoAssumirHoras)} h e aprende com a sua resposta.</p>
@@ -1849,9 +2109,9 @@ function configSecoes() {
   <h2>Nuvem e acesso</h2>
   <div class="cartao">${NUVEM.usuario ? `
     <p class="aviso info" style="margin-top:0">☁️ Você entrou${SERVIDOR.login ? "" : ` como <b>${esc(NUVEM.usuario.email || "")}</b>`}. Clientes, conversas, funil, aprovações, agenda, catálogo, configurações e o seu jeito de escrever ficam salvos no Supabase e aparecem em qualquer computador ou celular.${NUVEM.salvoEm ? ` Último envio: ${hora(NUVEM.salvoEm)}.` : ""}${NUVEM.erro ? `<br><b class="erro-txt">Erro: ${esc(NUVEM.erro)}</b>` : ""}</p>
-    <div class="linha"><button class="btn" data-a="nuvem-sincronizar">🔄 Sincronizar agora</button><button class="btn perigo" data-a="nuvem-sair">Sair</button></div>` : `
+    <div class="linha"><button class="btn" data-a="nuvem-sincronizar">Sincronizar agora</button><button class="btn perigo" data-a="nuvem-sair">Sair</button></div>` : `
     <p class="aviso" style="margin-top:0">A nuvem e o login ainda não estão ligados: faltam as variáveis de ambiente na Vercel${SERVIDOR.faltando?.length ? ` (${esc(SERVIDOR.faltando.join(", "))})` : ""}. Enquanto isso, os dados ficam só neste navegador.</p>
-    <button class="btn" data-a="diagnostico">🔍 Verificar configuração</button>`}
+    <button class="btn" data-a="diagnostico">Verificar configuração</button>`}
   </div>
   ${chavesAntigas().length ? `
   <h2>Chaves antigas deste navegador</h2>
@@ -1900,6 +2160,7 @@ document.addEventListener("change", (ev) => {
   if (el.id === "importar-zap") importarConversas([...el.files]).finally(() => (el.value = ""));
   if (el.id === "restaurar") restaurar(el.files[0]).finally(() => (el.value = ""));
   if (el.id?.startsWith("arquivo-audio-") && el.files[0]) clienteEnviaAudio(el.id.slice(14), el.files[0]).finally(() => (el.value = ""));
+  if (el.id?.startsWith("arquivo-loja-") && el.files[0]) lojaEnviaAudio(el.id.slice(13), el.files[0]).finally(() => (el.value = ""));
   if (el.id === "c-logo") trocarLogo(el.files[0]);
   if (el.id === "c-marca-cor") { S.config.marca.cor = el.value; aplicarMarca(); salvar("config"); }
 });
@@ -2048,21 +2309,40 @@ async function clienteEnviaAudio(contatoId, blob) {
   try { texto = await transcrever(blob); } catch (e) { toast(`Não consegui transcrever: ${e.message}`, "erro"); }
   clienteEnvia(contatoId, texto || "(áudio sem transcrição)", { tipo: "audio", audio });
 }
+/** Você (a loja) manda um áudio gravado ou um arquivo de áudio para o cliente. */
+async function lojaEnviaAudio(contatoId, blob) {
+  const c = contato(contatoId);
+  if (!c) return;
+  if (blob.size > 3.2e6) return toast("Áudio grande demais: mande até uns 3 minutos.", "erro");
+  const audio = await paraDataURL(blob);
+  // A transcrição fica no CRM para a IA saber o que você falou (o cliente recebe só o áudio).
+  let texto = "";
+  if (SERVIDOR.voz) { try { texto = await transcrever(blob); } catch { /* segue sem texto */ } }
+  const m = adicionarMensagem(contatoId, "dono", texto || "(áudio enviado por você)", { tipo: "audio", audio });
+  c.precisaDono = "";
+  salvar("contatos", `conv:${contatoId}`);
+  render();
+  if (m && ehReal(c)) { await entregarNoWhatsapp(contatoId, m); toast("Áudio enviado.", "ok"); }
+}
+/** Formato que o WhatsApp aceita melhor: ogg/opus ou mp4 (aac); webm só se o navegador não tiver outro. */
+const tipoGravacao = () => window.MediaRecorder?.isTypeSupported ? ["audio/ogg;codecs=opus", "audio/mp4", "audio/webm;codecs=opus"].find((t) => MediaRecorder.isTypeSupported(t)) : undefined;
 ACOES.gravar = async (el) => {
   const id = el.dataset.id;
+  const comoLoja = ehReal(contato(id)) || enviarComo === "dono";
   if (gravacao) { gravacao.rec.stop(); return; }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return toast("Este navegador não grava áudio. Use o botão de arquivo.", "erro");
   try {
     const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const rec = new MediaRecorder(fluxo);
+    const tipo = tipoGravacao();
+    const rec = tipo ? new MediaRecorder(fluxo, { mimeType: tipo }) : new MediaRecorder(fluxo);
     const pedacos = [];
     rec.ondataavailable = (e) => e.data.size && pedacos.push(e.data);
     rec.onstop = async () => {
       fluxo.getTracks().forEach((t) => t.stop());
       gravacao = null;
       render();
-      const blob = new Blob(pedacos, { type: rec.mimeType || "audio/webm" });
-      if (blob.size > 1000) await clienteEnviaAudio(id, blob);
+      const blob = new Blob(pedacos, { type: (rec.mimeType || "audio/webm").split(";")[0] });
+      if (blob.size > 1000) await (comoLoja ? lojaEnviaAudio(id, blob) : clienteEnviaAudio(id, blob));
     };
     rec.start();
     gravacao = { rec, id };
