@@ -200,6 +200,11 @@ Florianópolis Centro e região: R$ 20.
 Biguaçu e região: R$ 30.
 Governador Celso Ramos: R$ 50.
 Florianópolis Norte e Sul da Ilha: R$ 50.`;
+/** Versão 10: o texto do menu que foi salvo cortado ("...agilizar seu a") fica inteiro. */
+function migrarV10(cfg) {
+  const t = String(cfg.saudacao?.texto || "");
+  if (/agilizar seu a\s*$/.test(t)) cfg.saudacao.texto = t.replace(/agilizar seu a\s*$/, "agilizar seu atendimento.");
+}
 /** Versão 9: taxas de entrega por bairro/cidade. */
 function migrarV9(cfg) {
   cfg.loja = cfg.loja || {};
@@ -215,11 +220,12 @@ function migrarV8(cfg) {
 }
 export function migrarConfig(cfg) {
   const v = Number(cfg?.ia?.regrasVersao) || 1;
-  if (v >= 9) return false;
+  if (v >= 10) return false;
   if (v < 7) migrarAte7(cfg);
   if (v < 8) migrarV8(cfg);
-  migrarV9(cfg);
-  cfg.ia.regrasVersao = 9;
+  if (v < 9) migrarV9(cfg);
+  migrarV10(cfg);
+  cfg.ia.regrasVersao = 10;
   return true;
 }
 function migrarAte7(cfg) {
@@ -249,7 +255,7 @@ function migrarAte7(cfg) {
 }
 export const CONFIG_PADRAO = {
   marca: { nome: "RBTech", complemento: "Celulares", nomeIA: "Assistente RBTech", cor: "#ffd60a", logo: "" },
-  ia: { regrasVersao: 9, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
+  ia: { regrasVersao: 10, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
   loja: { site: "", endereco: "", cidade: "Florianópolis - SC", horario: "Segunda a sexta, 9h às 18h. Sábado, 9h às 13h.", pagamento: "Pix, cartão de crédito em até 12x, dinheiro.", soNaEntrega: true, pixChave: "", pixTitular: "", pixBanco: "", entregas: "", garantia: "", sobre: "", duracao: 30 },
   dono: { nome: "", whatsapp: "" },
   google: { clientId: "", calendarId: "primary" },
@@ -632,6 +638,8 @@ export function criarNucleo(S, ctx = {}) {
   - Entenda o cliente mesmo com erros de português, abreviações, palavras grudadas ou trocadas e áudio mal transcrito ("ifone", "14 pro maz", "qnto", "vcs", "tem o 13 de 128 gb branco?"). Entenda pelo contexto, sem corrigir nem comentar o erro. Só pergunte se realmente não der para entender, de um jeito leve.
   - Antes de perguntar qualquer coisa, releia a conversa inteira, inclusive as várias mensagens que o cliente mandou em seguida. Nunca pergunte o que ele já disse (modelo, armazenamento, cor, novo ou seminovo, forma de pagamento, nome, usado de entrada...): use a informação.
   - Uma pergunta por vez. Não faça interrogatório.
+  - "Fechou!", "Fechado!" e "Show, fechado!" só quando o cliente confirmou que vai levar. Antes disso, comece respondendo o que ele perguntou.
+  - Termine com UMA pergunta concreta que leve ao próximo passo (ex.: "Quer que eu já separe o preto pra ti?", "Prefere retirar na loja ou receber em casa?"), nunca com frase vaga como "já vejo a melhor forma de a gente fechar".
   - Mensagens CURTAS, como gente no WhatsApp: no máximo 2 frases curtas por mensagem. Se precisar de mais, quebre em até 3 mensagens com ---. Nunca mande bloco de texto.
   - Nunca fale das suas limitações ("não consigo abrir o link", "não vejo o anúncio", "sistema", "aqui não aparece"). Se o cliente mandou link de anúncio, do Marketplace ou do Instagram, siga pelo que ele escreveu e, se precisar, pergunte de um jeito natural ("Qual modelo te chamou atenção?").
   - Nunca cite outras pessoas confirmando ou decidindo: dono, chefe, gerente, "pessoal da loja", equipe, "pedido de confirmação". Para confirmar estoque, diga UMA vez só algo curto como "Deixa eu ver aqui pra ti 👊" e não repita isso nas mensagens seguintes.
@@ -1484,6 +1492,7 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     const c = contato(contatoId);
     if (c?.pausadoAte && new Date(c.pausadoAte) > agora) return false; // o dono está conversando
     if (!iaPodeAtender(c)) return false; // cliente fora da regra: nada automático
+    if (["aprovacao", "agendado"].includes(c?.estagio) || (c?.estagio === "atendimento" && Number(c.valor) > 0)) return false; // negociação com proposta: a IA retoma, sem menu
     if (ehLeadAnuncio(c) && S.config.anuncio?.semMenu && !conversa(contatoId).mensagens.some((m) => m.de === "ia" || m.de === "dono")) return false; // anúncio: qualifica em vez do menu
     const ultima = conversa(contatoId).mensagens.filter((m) => m.de === "cliente" || m.de === "ia" || m.de === "dono").at(-1);
     if (!ultima) return true;

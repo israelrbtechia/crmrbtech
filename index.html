@@ -2216,11 +2216,12 @@ function clienteEnvia(contatoId, texto, extra = {}) {
   N.detectarAnuncio(contatoId, texto);
   const saudar = N.precisaSaudacao(contatoId);
   adicionarMensagem(contatoId, "cliente", texto, extra);
-  if (saudar) {
-    // Simulador: o menu de boas-vindas sai na hora, como no WhatsApp de verdade.
+  if (saudar && extra.tipo !== "audio" && soCumprimento(texto)) {
+    // Simulador: só "oi"/"bom dia" recebe o menu (como no WhatsApp de verdade) e a IA espera a escolha.
+    // Quem já disse o que quer é atendido direto pela IA, sem menu.
     adicionarMensagem(contatoId, "ia", N.textoSaudacao(), { saudacao: true });
     N.anotarSaudacao(contatoId);
-    if (extra.tipo !== "audio" && soCumprimento(texto)) { render(); return; }
+    render(); return;
   }
   if (modoEfetivo(c) !== "manual") {
     if (!iaPronta()) toast(avisoIa(), "erro");
