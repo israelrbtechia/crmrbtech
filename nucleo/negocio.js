@@ -195,7 +195,22 @@ export function fraseDeAnuncio(texto, frases = FRASES_ANUNCIO_PADRAO) {
  * Devolve true se mudou alguma coisa (quem chama salva).
  */
 const FRASES_MARKETPLACE = ["Olá, esse item ainda está disponível?", "Esse item ainda está disponível?", "Vi no Marketplace"];
+/** Versão 8: pagamento só na entrega e chave Pix da loja. */
+function migrarV8(cfg) {
+  cfg.loja = cfg.loja || {};
+  if (cfg.loja.soNaEntrega === undefined) cfg.loja.soNaEntrega = true;
+  for (const k of ["pixChave", "pixTitular", "pixBanco"]) if (cfg.loja[k] === undefined) cfg.loja[k] = "";
+  if (!cfg.loja.pixChave && /rb\s*tech/i.test(cfg.marca?.nome || "")) Object.assign(cfg.loja, { pixChave: "57255657000117", pixTitular: "Israel Domingos dos Santos", pixBanco: "Mercado Pago" });
+}
 export function migrarConfig(cfg) {
+  const v = Number(cfg?.ia?.regrasVersao) || 1;
+  if (v >= 8) return false;
+  if (v < 7) migrarAte7(cfg);
+  migrarV8(cfg);
+  cfg.ia.regrasVersao = 8;
+  return true;
+}
+function migrarAte7(cfg) {
   const v = Number(cfg?.ia?.regrasVersao) || 1;
   if (v >= 7) return false;
   if (v === 6) {
@@ -222,8 +237,8 @@ export function migrarConfig(cfg) {
 }
 export const CONFIG_PADRAO = {
   marca: { nome: "RBTech", complemento: "Celulares", nomeIA: "Assistente RBTech", cor: "#ffd60a", logo: "" },
-  ia: { regrasVersao: 7, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
-  loja: { site: "", endereco: "", cidade: "Florianópolis - SC", horario: "Segunda a sexta, 9h às 18h. Sábado, 9h às 13h.", pagamento: "Pix, cartão de crédito em até 12x, dinheiro.", garantia: "", sobre: "", duracao: 30 },
+  ia: { regrasVersao: 8, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
+  loja: { site: "", endereco: "", cidade: "Florianópolis - SC", horario: "Segunda a sexta, 9h às 18h. Sábado, 9h às 13h.", pagamento: "Pix, cartão de crédito em até 12x, dinheiro.", soNaEntrega: true, pixChave: "", pixTitular: "", pixBanco: "", garantia: "", sobre: "", duracao: 30 },
   dono: { nome: "", whatsapp: "" },
   google: { clientId: "", calendarId: "primary" },
   importacao: { fonte: FONTE_SITE_PADRAO, auto: true, ultimaEm: null, resumo: "" },
@@ -575,6 +590,8 @@ export function criarNucleo(S, ctx = {}) {
   Endereço: ${loja.endereco || "(não cadastrado: se perguntarem, diga que vai confirmar)"}
   Horário: ${loja.horario || "-"}
   Formas de pagamento: ${loja.pagamento || "-"}
+  ${loja.soNaEntrega !== false ? "Quando paga: SEMPRE só na entrega (ou na retirada na loja). O cliente paga quando recebe o aparelho." : ""}
+  ${loja.pixChave ? `Chave Pix: ${loja.pixChave}${loja.pixTitular ? ` (${loja.pixTitular}${loja.pixBanco ? `, ${loja.pixBanco}` : ""})` : ""}` : ""}
   Garantia: ${loja.garantia || "(não cadastrada: se perguntarem, chame o dono)"}
   ${site ? `Site: ${site}. Quando precisar de algo que não está aqui (produtos, serviços, políticas), leia o site com web_fetch. Só use páginas desse site.` : ""}
   ${secaoSite()}
@@ -634,6 +651,8 @@ export function criarNucleo(S, ctx = {}) {
   13. Modelo, cor ou armazenamento que o cliente pediu e que não está no catálogo ou está sem estoque (inclusive Xiaomi e acessórios que não estão no catálogo nem nas instruções do dono): não diga logo que não tem. Use pedir_decisao_dono, com o que há de mais parecido no catálogo e a sua sugestão, e diga ao cliente, curto e uma vez só, que vai ver e já retorna. Não ofereça outra opção enquanto a decisão não chega, a não ser que o cliente peça. Se o dono já respondeu sobre esse aparelho (bloco "JÁ CONFIRMADO PELO DONO"), não pergunte de novo: o que ele disse vale mais que o catálogo. Quando a decisão chegar (mensagem de sistema), siga o que o dono decidiu.
   14. Pedido de desconto ("faz por menos?", "tem desconto?", "consegue melhorar?", "à vista sai quanto?" depois de já ter o valor): use pedir_desconto_dono com o valor que você sugere (um desconto pequeno que feche a venda) e não responda nada ao cliente nessa vez. Quando o dono liberar, responda na hora, animado ("Olá, consigo sim um descontinho pra ti!"), com o valor novo, e conduza para fechar. Se ele negar, segure o preço com valor, sem dizer que consultou alguém.
 
+${loja.soNaEntrega !== false ? `  15. Pagamento é SEMPRE só na entrega (ou na retirada na loja): o cliente paga quando recebe o aparelho. Ao falar de pagamento, fechar a venda ou combinar a entrega, avise com naturalidade que o pagamento é só na entrega.${loja.pixChave ? ` Se o cliente for pagar no Pix ou pedir a chave, pode mandar a chave Pix para ele deixar salva, dizendo que é para pagar na hora da entrega. Mande a chave numa mensagem separada (com ---), só ela, para ficar fácil de copiar: "${loja.pixChave}", e diga de quem é (${loja.pixTitular || marca.nome}${loja.pixBanco ? `, ${loja.pixBanco}` : ""}).` : ""} Nunca peça pagamento antecipado, sinal, adiantamento ou comprovante antes da entrega, a não ser que a nota de sistema diga que o dono pediu isso nesta negociação; aí siga exatamente o que ele pediu (valor e prazo). Reparo segue a regra 11.
+` : ""}
   # Formato da resposta
   Escreva só o texto que vai para o cliente, pronto para o WhatsApp. Mensagens curtas, como gente de verdade escreve. Para mandar mais de uma mensagem separada, ponha uma linha só com --- entre elas. Pode usar *negrito* do WhatsApp com moderação; nada de títulos ou listas longas.
   Tudo o que você escreve vai direto para o WhatsApp do cliente. Nunca escreva para você mesmo, não explique o que está fazendo e não fale do cliente em terceira pessoa.
@@ -662,6 +681,7 @@ export function criarNucleo(S, ctx = {}) {
     return [
       `Agora: ${quando} (horário de Brasília).`,
       `Cartão do cliente no funil: nome ${c.nome || "(não sabemos)"} | WhatsApp ${c.telefone ? `+${c.telefone}` : "-"} | fase ${c.estagio} (${NOME_ESTAGIO[c.estagio]}) | temperatura ${c.temperatura || "-"} | valor ${c.valor ? brl(c.valor) : "-"} | interesse ${c.interesse || "-"} | próximo passo ${c.proximoPasso || "-"} | resumo ${c.resumo || "-"} | origem ${ehLeadAnuncio(c) ? `anúncio${c.anuncio?.titulo ? ` (${c.anuncio.titulo})` : ""}${c.anuncio?.frase ? ` (chegou com a mensagem pronta: "${c.anuncio.frase}")` : ""}` : c.origemLead || "-"}${c.notas ? `\nNotas: ${c.notas.slice(-600)}` : ""}`,
+      donoPediuAntecipado(c.id) ? `O DONO PEDIU pagamento antecipado ou sinal nesta negociação ("${cortar(donoPediuAntecipado(c.id), 200)}"). Siga o que ele pediu e pode passar a chave Pix para isso.` : "",
       aprov.length ? `Aprovações deste cliente:\n${aprov.join("\n")}` : "Nenhuma aprovação pedida para este cliente ainda.",
       jaConfirmado(c.id).length ? `JÁ CONFIRMADO PELO DONO (vale para a conversa toda; afirme ao cliente com segurança, sem "vou confirmar", e NÃO peça de novo):\n${jaConfirmado(c.id).map((a) => a.tipo === "decisao" ? `- ${a.produto}: "${a.comentario}"` : `- ${a.produto}: tem em estoque, ${brl(a.valorFinal || a.valor)}`).join("\n")}` : "",
       comps.length ? `Compromissos deste cliente:\n${comps.join("\n")}` : "",
@@ -1507,9 +1527,25 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     [/\b(pessoal|equipe|gerente|chefe|dono|patr[aã]o|respons[aá]vel)(es)? da loja\b|\bcom (o|a|os) (pessoal|dono|chefe|gerente|equipe|respons[aá]vel)\b|pedido de confirma[cç][aã]o|\bconfirmar com (o|a) /i, "citou outras pessoas confirmando (dono, pessoal da loja, equipe, pedido de confirmação)"],
   ];
   const RE_CONFIRMANDO = /\b(deixa eu|vou|t[oô]|estou|to) (s[oó] )?(ver|confirmar|verificar|checar|conferir)\b|\bconfirmando\b|aguardando (a )?(confirma|resposta)|assim que (eu )?(tiver|souber|confirmar)/i;
+  const RE_ANTECIPADO = /\bsinal\b|antecipad|adiantad|adiantament|pag(ar|ue|a) antes|reserv(ar|a) com|garantir com/i;
+  /** O dono pediu pagamento antecipado ou sinal para este cliente? Devolve o trecho em que pediu. */
+  function donoPediuAntecipado(contatoId) {
+    const conv = S.conv[contatoId];
+    const doDono = [
+      ...(conv?.mensagens || []).filter((m) => m.de === "dono").map((m) => m.texto || ""),
+      ...(conv?.notas || []).filter((n) => /dono|ordem/i.test(n)),
+      ...S.aprovacoes.filter((a) => a.contatoId === contatoId && a.comentario).map((a) => a.comentario),
+    ];
+    return doDono.reverse().find((t) => RE_ANTECIPADO.test(t) && !/\b(n[aã]o|nada de|sem)\b[^.!?\n]{0,20}(sinal|antecipad|adiantad)/i.test(t)) || "";
+  }
+  const RE_COBRA_ANTES = /(pix|pagamento|pagar|sinal|comprovante)[^.!?\n]{0,30}(agora|antes da entrega|adiantad|antecipad|pra reservar|para reservar|pra garantir|para garantir)|\b(manda|mande|envia|envie)r? o comprovante|\bum sinal\b|\bsinal de\b/i;
   const RE_INTERNO = /\bo cliente\b|\bn[aã]o vou responder\b|resposta autom[aá]tica|mensagem de aus[eê]ncia|mensagem de sistema|\binstru[cç][oõ]es\b|\bprompt\b|vai-e-vem|retomo o atendimento|\b(vou|irei) aguardar (o|a) (cliente|pessoa)/i;
   function revisarResposta(texto, contatoId) {
     const problemas = [];
+    if (contatoId && S.config.loja?.soNaEntrega !== false && !donoPediuAntecipado(contatoId)
+      && String(texto).split(/(?<=[.!?\n])/).some((f) => RE_COBRA_ANTES.test(f) && !/\b(n[aã]o|nada|sem|nunca)\b/i.test(f))) {
+      problemas.push("pediu pagamento antecipado, sinal ou comprovante: o pagamento é só na entrega (só peça antes se o dono tiver pedido)");
+    }
     if (RE_INTERNO.test(texto)) problemas.push("escreveu um texto interno (explicação, o cliente em terceira pessoa) em vez de falar com o cliente; se não é para responder, escreva só [SEM RESPOSTA]");
     if (contatoId && RE_CONFIRMANDO.test(texto)) {
       const pendente = S.aprovacoes.some((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo !== "desconto");

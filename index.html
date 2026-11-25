@@ -2026,6 +2026,10 @@ function configSecoes() {
     <label class="campo"><span>Horário de funcionamento</span><input type="text" id="c-loja-horario" value="${esc(loja.horario)}"></label>
     <label class="campo"><span>Duração padrão de um atendimento (min)</span><input type="number" id="c-loja-duracao" value="${loja.duracao}"></label>
     <label class="campo largo"><span>Formas de pagamento</span><input type="text" id="c-loja-pagamento" value="${esc(loja.pagamento)}"></label>
+    <label class="campo largo" style="flex-direction:row;align-items:center;gap:10px;color:var(--texto)"><input type="checkbox" id="c-loja-soNaEntrega" ${loja.soNaEntrega !== false ? "checked" : ""}><span>Pagamento só na entrega <small class="suave">(a IA avisa o cliente e nunca pede sinal ou antecipado, a não ser que você peça na negociação)</small></span></label>
+    <label class="campo"><span>Chave Pix <small>(a IA manda ao cliente)</small></span><input type="text" id="c-loja-pixChave" value="${esc(loja.pixChave || "")}" placeholder="CNPJ, e-mail, telefone ou chave aleatória"></label>
+    <label class="campo"><span>Nome na chave Pix</span><input type="text" id="c-loja-pixTitular" value="${esc(loja.pixTitular || "")}"></label>
+    <label class="campo"><span>Banco</span><input type="text" id="c-loja-pixBanco" value="${esc(loja.pixBanco || "")}" placeholder="Ex.: Mercado Pago"></label>
     <label class="campo largo"><span>Garantia</span><input type="text" id="c-loja-garantia" value="${esc(loja.garantia)}" placeholder="Ex.: 90 dias nos seminovos, 1 ano Apple nos lacrados"></label>
     <label class="campo largo"><span>Sobre a loja</span><textarea id="c-loja-sobre" rows="4" placeholder="O que a loja vende, serviços (reparo, troca de bateria…), diferenciais, se aceita usado na troca, se faz entrega e onde…">${esc(loja.sobre)}</textarea></label>
   </div></div>
