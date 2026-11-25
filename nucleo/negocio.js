@@ -31,6 +31,18 @@ export const textoValido = (t) => String(t).replace(/[\uD800-\uDBFF](?![\uDC00-\
 /** Corta o texto em n caracteres sem partir emoji ao meio. */
 export const cortar = (t, n) => { const a = Array.from(String(t ?? "")); return a.length > n ? a.slice(0, n).join("") : a.join(""); };
 const limparParaApi = (v) => (typeof v === "string" ? textoValido(v) : Array.isArray(v) ? v.map(limparParaApi) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, limparParaApi(x)])) : v);
+/**
+ * Resposta automática de outro WhatsApp (mensagem de ausência, saudação de robô, menu "digite 1").
+ * Entra no CRM só como registro: sem menu e sem IA (senão vira conversa de robô com robô).
+ */
+export function ehRespostaAutomatica(texto) {
+  const t = String(texto || "");
+  if (/estamos ausentes|no momento (estamos|n[aã]o (estamos|podemos|conseguimos))|em breve (retornaremos|responderemos|entraremos em contato|daremos retorno)|retornaremos (a |sua |a sua )?(sua )?(mensagem|contato)|mensagem autom[aá]tica|resposta autom[aá]tica|fora do (nosso )?hor[aá]rio de atendimento|nosso hor[aá]rio de atendimento [ée]|n[aã]o estamos dispon[ií]veis|assim que poss[ií]vel (retornaremos|responderemos)|aguarde,? (que )?(em breve|logo) (um|uma) (atendente|consultor)|digite (o n[uú]mero|a op[cç][aã]o|1\b)|selecione (uma|a) op[cç][aã]o|escolha uma das op[cç][oõ]es/i.test(t)) return true;
+  const teclas = (t.match(/[0-9]️?⃣/g) || []).length;
+  return teclas >= 3; // menu com 1️⃣ 2️⃣ 3️⃣ de outra empresa
+}
+/** A IA decidiu não responder (ex.: [SEM RESPOSTA]): nada vai para o cliente. */
+export const semResposta = (texto) => /\[\s*sem\s+resposta\s*\]/i.test(String(texto || ""));
 export const partesDoTexto = (texto) => String(texto || "").split(/\n\s*---+\s*\n/).map((t) => t.trim()).filter(Boolean);
 /** No Brasil o WhatsApp às vezes manda o celular sem o nono dígito: serve só para comparar números. */
 export function chaveNumero(numero) {
@@ -624,6 +636,8 @@ export function criarNucleo(S, ctx = {}) {
 
   # Formato da resposta
   Escreva só o texto que vai para o cliente, pronto para o WhatsApp. Mensagens curtas, como gente de verdade escreve. Para mandar mais de uma mensagem separada, ponha uma linha só com --- entre elas. Pode usar *negrito* do WhatsApp com moderação; nada de títulos ou listas longas.
+  Tudo o que você escreve vai direto para o WhatsApp do cliente. Nunca escreva para você mesmo, não explique o que está fazendo e não fale do cliente em terceira pessoa.
+  Se a mensagem não pede resposta (resposta automática de outra empresa, "ok", "obrigado" que encerra a conversa, figurinha solta), escreva só [SEM RESPOSTA] e nada vai para o cliente.
   Uma parte que começa com [ÁUDIO] vira um áudio com a voz do dono. Use [ÁUDIO] só quando a mensagem de sistema pedir.`;
   }
 
@@ -1493,8 +1507,10 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     [/\b(pessoal|equipe|gerente|chefe|dono|patr[aã]o|respons[aá]vel)(es)? da loja\b|\bcom (o|a|os) (pessoal|dono|chefe|gerente|equipe|respons[aá]vel)\b|pedido de confirma[cç][aã]o|\bconfirmar com (o|a) /i, "citou outras pessoas confirmando (dono, pessoal da loja, equipe, pedido de confirmação)"],
   ];
   const RE_CONFIRMANDO = /\b(deixa eu|vou|t[oô]|estou|to) (s[oó] )?(ver|confirmar|verificar|checar|conferir)\b|\bconfirmando\b|aguardando (a )?(confirma|resposta)|assim que (eu )?(tiver|souber|confirmar)/i;
+  const RE_INTERNO = /\bo cliente\b|\bn[aã]o vou responder\b|resposta autom[aá]tica|mensagem de aus[eê]ncia|mensagem de sistema|\binstru[cç][oõ]es\b|\bprompt\b|vai-e-vem|retomo o atendimento|\b(vou|irei) aguardar (o|a) (cliente|pessoa)/i;
   function revisarResposta(texto, contatoId) {
     const problemas = [];
+    if (RE_INTERNO.test(texto)) problemas.push("escreveu um texto interno (explicação, o cliente em terceira pessoa) em vez de falar com o cliente; se não é para responder, escreva só [SEM RESPOSTA]");
     if (contatoId && RE_CONFIRMANDO.test(texto)) {
       const pendente = S.aprovacoes.some((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo !== "desconto");
       const jaDisse = (S.conv[contatoId]?.mensagens || []).filter((m) => m.de === "ia").slice(-3).some((m) => RE_CONFIRMANDO.test(m.texto || ""));
@@ -1515,7 +1531,7 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     let revisoes = 0;
     try {
       for (let rodada = 0; ; rodada++) {
-        const novas = conv.mensagens.filter((m) => m.de === "cliente" && !m.naIA);
+        const novas = conv.mensagens.filter((m) => m.de === "cliente" && !m.naIA && !m.automatica);
         const notas = [...conv.notas];
         if (!novas.length && !notas.length) return { texto: "", nada: true };
         const sistema = promptSistema();
@@ -1562,8 +1578,10 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
             continue;
           }
         }
+        const textoFinal = final.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+        if (semResposta(textoFinal)) conv.silenciar = true; // a IA decidiu não responder
         if (!conv.silenciar && revisoes < 1) {
-          const texto0 = final.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+          const texto0 = textoFinal;
           const problemas = revisarResposta(texto0, contatoId);
           if (problemas.length) {
             // Não sai: a IA reescreve sabendo o que estava errado.
@@ -1581,7 +1599,11 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
           delete conv.silenciar;
           return { texto: "", silencio: true };
         }
-        const texto = final.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+        const texto = textoFinal;
+        if (RE_INTERNO.test(texto)) {
+          evento(contatoId, "🤫 A IA escreveu um texto interno de novo: nada foi enviado ao cliente.");
+          return { texto: "", silencio: true };
+        }
         return { texto };
       }
     } catch (e) {
