@@ -1459,7 +1459,7 @@ TELAS.funil = () => {
 // ---------------------------------------------------------------- Aprovações
 TELAS.aprovacoes = () => {
   const pend = S.aprovacoes.filter((a) => a.status === "pendente");
-  const hist = S.aprovacoes.filter((a) => a.status !== "pendente").slice(-20).reverse();
+  const hist = S.aprovacoes.filter((a) => a.status !== "pendente" && a.status !== "descartada").slice(-20).reverse();
   const cartao = (a) => {
     const c = contato(a.contatoId);
     if (a.tipo === "desconto") return `<div class="cartao cartao-aprov ${a.status}">
@@ -1470,12 +1470,13 @@ TELAS.aprovacoes = () => {
         <input type="number" id="valor-${a.id}" data-manter placeholder="Outro valor (R$)" style="width:150px">
         <button class="btn" data-a="aprovar-valor" data-id="${a.id}">Liberar com este valor</button>
         <button class="btn perigo" data-a="recusar" data-id="${a.id}">⛔ Não dar desconto</button>
+        <button class="btn pq" data-a="excluir-pedido" data-id="${a.id}" title="Some da lista sem responder e sem avisar o cliente">🗑️ Excluir</button>
       </div>` : ""}
     </div>`;
     if (a.tipo === "decisao") return `<div class="cartao cartao-aprov ${a.status === "pendente" ? "pendente" : "aprovada"}">
       <div class="linha"><b>🤔 #${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : "vd"}">${a.status === "pendente" ? "decidir" : "decidida"}</span></div>
       <div class="suave peq" style="margin:6px 0">👤 <a href="#conversas/${a.contatoId}">${esc(nomeCli(c))}</a> · ⚠️ ${esc(a.situacao)}${a.temos ? `<br>📦 Temos: ${esc(a.temos)}` : ""}${a.sugestao ? `<br>💡 Sugestão da IA: ${esc(a.sugestao)}` : ""}${a.resumo ? `<br>📝 ${esc(a.resumo)}` : ""}${a.comentario ? `<br>Você decidiu: <b>${esc(a.comentario)}</b>` : ""}</div>
-      ${a.status === "pendente" ? `<div class="linha"><input type="text" id="decisao-${a.id}" data-manter placeholder="O que fazer? ex.: encomenda 7 dias 4.300 · oferece o azul · não trabalhamos" style="flex:1;min-width:220px"><button class="btn prim" data-a="decidir" data-id="${a.id}">Responder</button></div>` : ""}
+      ${a.status === "pendente" ? `<div class="linha"><input type="text" id="decisao-${a.id}" data-manter placeholder="O que fazer? ex.: encomenda 7 dias 4.300 · oferece o azul · não trabalhamos" style="flex:1;min-width:220px"><button class="btn prim" data-a="decidir" data-id="${a.id}">Responder</button><button class="btn pq" data-a="excluir-pedido" data-id="${a.id}" title="Some da lista sem responder e sem avisar o cliente">🗑️ Excluir</button></div>` : ""}
     </div>`;
     return `<div class="cartao cartao-aprov ${a.status}">
       <div class="linha"><b>#${a.codigo} · ${esc(a.produto)}</b><span class="espaco"></span><span class="etq ${a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm"}">${a.status}</span></div>
@@ -1485,6 +1486,7 @@ TELAS.aprovacoes = () => {
         <input type="number" id="valor-${a.id}" data-manter placeholder="Valor certo (R$)" style="width:150px">
         <button class="btn" data-a="aprovar-valor" data-id="${a.id}">Aprovar com este valor</button>
         <button class="btn perigo" data-a="recusar" data-id="${a.id}">⛔ Não tem</button>
+        <button class="btn pq" data-a="excluir-pedido" data-id="${a.id}" title="Some da lista sem responder e sem avisar o cliente">🗑️ Excluir</button>
       </div><input type="text" id="coment-${a.id}" data-manter placeholder="Comentário para a IA (opcional): ex. só tem na cor azul" style="margin-top:8px">` : ""}
       ${a.status === "aprovada" && a.idCatalogo && a.valorFinal && S.catalogo.find((i) => i.id === a.idCatalogo && i.origem !== "site" && Number(i.preco) !== Number(a.valorFinal)) ? `<button class="btn pq" style="margin-top:8px" data-a="salvar-preco" data-id="${a.id}">Salvar ${brl(a.valorFinal)} no catálogo (${esc(a.idCatalogo)})</button>` : ""}
     </div>`;
@@ -2117,6 +2119,13 @@ ACOES["liberar-ia"] = (el) => {
   const ult = conversa(c.id).mensagens.filter((m) => m.de !== "evento").at(-1);
   if (c.iaLiberada && ult?.de === "cliente") seguirConversa(c.id); // responde o que estava esperando
   toast(c.iaLiberada ? "IA liberada para este cliente." : "IA bloqueada: só você responde este cliente.", "ok");
+  render();
+};
+ACOES["excluir-pedido"] = (el) => {
+  const a = S.aprovacoes.find((x) => x.id === el.dataset.id);
+  if (!a || !confirm(`Excluir o pedido #${a.codigo} sem responder? O cliente não é avisado.`)) return;
+  N.descartarPedido(a.id);
+  toast(`Pedido #${a.codigo} excluído.`, "ok");
   render();
 };
 ACOES.decidir = (el) => {

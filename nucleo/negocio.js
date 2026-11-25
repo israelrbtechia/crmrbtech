@@ -643,7 +643,7 @@ export function criarNucleo(S, ctx = {}) {
   function notaDeSistema(c, notas, { pedirAudio = false, veioAudio = false } = {}) {
     const agora = new Date();
     const quando = agora.toLocaleString("pt-BR", { timeZone: FUSO, weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    const aprov = S.aprovacoes.filter((a) => a.contatoId === c.id).slice(-5).map((a) => a.tipo === "desconto" ? `#${a.codigo} desconto em ${a.produto} (de ${brl(a.valorAtual)} para ${brl(a.valor)}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu: não fale de desconto com o cliente)" : a.status === "aprovada" ? `LIBERADO por ${brl(a.valorFinal)}` : "NÃO LIBERADO"}` : a.tipo === "decisao" ? `#${a.codigo} decisão sobre ${a.produto} (${a.situacao}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não decidiu)" : `o dono decidiu: "${a.comentario}"`}` : `#${a.codigo} ${a.produto} por ${a.valor ? brl(a.valor) : "valor a definir"}: ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu)" : a.status === "aprovada" ? `APROVADA${a.valorFinal ? ` (valor final ${brl(a.valorFinal)})` : ""}` : a.status === "cancelada" ? "CANCELADA pelo dono (venda desfeita)" : "RECUSADA"}${a.comentario ? `. Dono disse: "${a.comentario}"` : ""}`);
+    const aprov = S.aprovacoes.filter((a) => a.contatoId === c.id && a.status !== "descartada").slice(-5).map((a) => a.tipo === "desconto" ? `#${a.codigo} desconto em ${a.produto} (de ${brl(a.valorAtual)} para ${brl(a.valor)}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu: não fale de desconto com o cliente)" : a.status === "aprovada" ? `LIBERADO por ${brl(a.valorFinal)}` : "NÃO LIBERADO"}` : a.tipo === "decisao" ? `#${a.codigo} decisão sobre ${a.produto} (${a.situacao}): ${a.status === "pendente" ? "PENDENTE (o dono ainda não decidiu)" : `o dono decidiu: "${a.comentario}"`}` : `#${a.codigo} ${a.produto} por ${a.valor ? brl(a.valor) : "valor a definir"}: ${a.status === "pendente" ? "PENDENTE (o dono ainda não respondeu)" : a.status === "aprovada" ? `APROVADA${a.valorFinal ? ` (valor final ${brl(a.valorFinal)})` : ""}` : a.status === "cancelada" ? "CANCELADA pelo dono (venda desfeita)" : "RECUSADA"}${a.comentario ? `. Dono disse: "${a.comentario}"` : ""}`);
     const comps = S.compromissos.filter((x) => x.contatoId === c.id && x.status !== "cancelado").map((x) => `${x.id}: ${TIPOS[x.tipo]} em ${dataHora(x.inicio)}${x.status === "feito" ? " (já aconteceu)" : ""}`);
     return [
       `Agora: ${quando} (horário de Brasília).`,
@@ -1622,6 +1622,22 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     salvar("aprovacoes", "contatos", `conv:${a.contatoId}`);
     return a;
   }
+  /** O dono excluiu um pedido sem responder: some da lista, nada vai para o cliente e a IA não espera mais. */
+  function descartarPedido(id) {
+    const a = S.aprovacoes.find((x) => x.id === id);
+    if (!a || a.status !== "pendente") return null;
+    a.status = "descartada";
+    a.respondidaEm = agoraISO();
+    const c = contato(a.contatoId);
+    if (c) {
+      if (c.estagio === "aprovacao") mudarEstagio(c, "atendimento", "voce");
+      if (String(c.proximoPasso || "").includes(`#${a.codigo}`)) c.proximoPasso = "";
+    }
+    conversa(a.contatoId).notas.push(`O pedido #${a.codigo} (${a.produto}) foi EXCLUÍDO pelo dono, sem resposta. Não espere resposta dele e não fale desse pedido com o cliente; siga a conversa normalmente.`);
+    evento(a.contatoId, `🗑️ Você excluiu o pedido #${a.codigo}`);
+    salvar("aprovacoes", "contatos", `conv:${a.contatoId}`);
+    return a;
+  }
   /** O dono respondeu uma tomada de decisão (texto livre). Quem chama roda a IA depois. */
   function responderDecisao(id, resposta) {
     const a = S.aprovacoes.find((x) => x.id === id);
@@ -1664,6 +1680,7 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     const obj = (props, desc = {}) => ({ type: "object", additionalProperties: false, required: Object.keys(props), properties: Object.fromEntries(Object.entries(props).map(([k, t]) => [k, typeof t === "string" ? { type: t, ...(desc[k] ? { description: desc[k] } : {}) } : t])) });
     return [
       { name: "responder_pedido", strict: true, description: "Responde um pedido pendente: aprovação de venda (sim, não ou sim com o valor certo) ou decisão de estoque (texto livre).", input_schema: obj({ codigo: "string", resposta: "string" }, { codigo: "Código do pedido, ex.: A3", resposta: "Para aprovação: 'sim', 'não' ou 'sim 3799'. Para decisão: o que o dono decidiu, ex.: 'encomenda 7 dias 5199'" }) },
+      { name: "excluir_pedido", strict: true, description: "Exclui um pedido pendente (aprovação, decisão ou desconto) sem responder: nada vai para o cliente e a IA para de esperar.", input_schema: obj({ codigo: "string" }, { codigo: "Código do pedido, ex.: A12" }) },
       { name: "mandar_para_cliente", strict: true, description: "Manda mensagem para um cliente que já está no CRM. Com instrucao, a IA vendedora escreve do jeito da loja e envia na hora. Use texto_exato só quando o dono ditou a mensagem palavra por palavra.", input_schema: obj({ contato_id: "string", instrucao: "string", texto_exato: "string" }, { contato_id: "id do cliente (da lista)", instrucao: "O que dizer ou fazer, ex.: avisar que o iPhone 15 chegou e chamar para retirar hoje", texto_exato: "Mensagem exata ditada pelo dono, ou vazio" }) },
       { name: "novo_cliente", strict: true, description: "Cadastra um cliente novo pelo WhatsApp e já manda a primeira mensagem (a IA escreve do jeito da loja).", input_schema: obj({ nome: "string", telefone: "string", instrucao: "string" }, { telefone: "WhatsApp com DDD", instrucao: "O que a primeira mensagem deve dizer" }) },
       { name: "mudar_modo", strict: true, description: "Muda quem responde os clientes durante o dia: auto (a IA responde sozinha), sugerir (a IA sugere e o dono aprova no CRM) ou manual (só o dono responde). À noite a IA responde sozinha se o modo noturno estiver ligado.", input_schema: obj({ modo: { type: "string", enum: Object.keys(MODOS_GERAIS) } }) },
@@ -1677,7 +1694,7 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
   }
   /** Pedidos de aprovação do cliente, para o assistente do dono saber o que é "a venda". */
   function vendasDe(contatoId) {
-    const ap = S.aprovacoes.filter((a) => a.contatoId === contatoId && a.tipo !== "decisao" && a.status !== "recusada").slice(-3);
+    const ap = S.aprovacoes.filter((a) => a.contatoId === contatoId && a.tipo !== "decisao" && a.status !== "recusada" && a.status !== "descartada").slice(-3);
     return ap.length ? ` | pedidos: ${ap.map((a) => `#${a.codigo} ${a.produto} ${brl(a.valorFinal || a.valor)} (${a.status})`).join("; ")}` : "";
   }
   function contextoDono() {
@@ -1723,6 +1740,13 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
         const lista = a.tipo === "desconto" ? saida.acionar : saida.seguir; // desconto: o cliente recebe a resposta na hora
         if (!lista.includes(a.contatoId)) lista.push(a.contatoId);
         return { ok: true, pedido: cod, decisao: r.decisao, valor: r.valor || a.valor || null };
+      }
+      case "excluir_pedido": {
+        const cod = String(ent.codigo || "").replace("#", "").toUpperCase();
+        const a = S.aprovacoes.find((x) => x.status === "pendente" && x.codigo === cod);
+        if (!a) return { erro: `O pedido ${cod} não está pendente.` };
+        descartarPedido(a.id);
+        return { ok: true, excluido: cod, cliente: nomeCli(contato(a.contatoId)) };
       }
       case "mandar_para_cliente": {
         const c = cli(ent.contato_id);
@@ -1922,6 +1946,6 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, modoSemRegra, campanhasDevidas, prepararCampanha, dataDaCompra, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, donoResponde, assistenteDono,
+    noturno, modoEfetivo, modoSemRegra, campanhasDevidas, prepararCampanha, dataDaCompra, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, descartarPedido, donoResponde, assistenteDono,
   };
 }
