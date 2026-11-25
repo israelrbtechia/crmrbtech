@@ -195,6 +195,17 @@ export function fraseDeAnuncio(texto, frases = FRASES_ANUNCIO_PADRAO) {
  * Devolve true se mudou alguma coisa (quem chama salva).
  */
 const FRASES_MARKETPLACE = ["Olá, esse item ainda está disponível?", "Esse item ainda está disponível?", "Vi no Marketplace"];
+const ENTREGAS_RBTECH = `Sem taxa de entrega: Sertão do Maruim, Jardim Eldorado, Roçado, Kobrasol, Colônia Santana, Santa Tereza, Ponte do Imaruim, Leoberto Leal e Jardim Floresta.
+Florianópolis Centro e região: R$ 20.
+Biguaçu e região: R$ 30.
+Governador Celso Ramos: R$ 50.
+Florianópolis Norte e Sul da Ilha: R$ 50.`;
+/** Versão 9: taxas de entrega por bairro/cidade. */
+function migrarV9(cfg) {
+  cfg.loja = cfg.loja || {};
+  if (cfg.loja.entregas === undefined) cfg.loja.entregas = "";
+  if (!cfg.loja.entregas && /rb\s*tech/i.test(cfg.marca?.nome || "")) cfg.loja.entregas = ENTREGAS_RBTECH;
+}
 /** Versão 8: pagamento só na entrega e chave Pix da loja. */
 function migrarV8(cfg) {
   cfg.loja = cfg.loja || {};
@@ -204,10 +215,11 @@ function migrarV8(cfg) {
 }
 export function migrarConfig(cfg) {
   const v = Number(cfg?.ia?.regrasVersao) || 1;
-  if (v >= 8) return false;
+  if (v >= 9) return false;
   if (v < 7) migrarAte7(cfg);
-  migrarV8(cfg);
-  cfg.ia.regrasVersao = 8;
+  if (v < 8) migrarV8(cfg);
+  migrarV9(cfg);
+  cfg.ia.regrasVersao = 9;
   return true;
 }
 function migrarAte7(cfg) {
@@ -237,8 +249,8 @@ function migrarAte7(cfg) {
 }
 export const CONFIG_PADRAO = {
   marca: { nome: "RBTech", complemento: "Celulares", nomeIA: "Assistente RBTech", cor: "#ffd60a", logo: "" },
-  ia: { regrasVersao: 8, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
-  loja: { site: "", endereco: "", cidade: "Florianópolis - SC", horario: "Segunda a sexta, 9h às 18h. Sábado, 9h às 13h.", pagamento: "Pix, cartão de crédito em até 12x, dinheiro.", soNaEntrega: true, pixChave: "", pixTitular: "", pixBanco: "", garantia: "", sobre: "", duracao: 30 },
+  ia: { regrasVersao: 9, apiKey: "", modelo: "claude-haiku-5-5", esforco: "low", modoPadrao: "sugerir", espera: 4, instrucoes: INSTRUCOES_EXEMPLO },
+  loja: { site: "", endereco: "", cidade: "Florianópolis - SC", horario: "Segunda a sexta, 9h às 18h. Sábado, 9h às 13h.", pagamento: "Pix, cartão de crédito em até 12x, dinheiro.", soNaEntrega: true, pixChave: "", pixTitular: "", pixBanco: "", entregas: "", garantia: "", sobre: "", duracao: 30 },
   dono: { nome: "", whatsapp: "" },
   google: { clientId: "", calendarId: "primary" },
   importacao: { fonte: FONTE_SITE_PADRAO, auto: true, ultimaEm: null, resumo: "" },
@@ -591,6 +603,7 @@ export function criarNucleo(S, ctx = {}) {
   Horário: ${loja.horario || "-"}
   Formas de pagamento: ${loja.pagamento || "-"}
   ${loja.soNaEntrega !== false ? "Quando paga: SEMPRE só na entrega (ou na retirada na loja). O cliente paga quando recebe o aparelho." : ""}
+  ${loja.entregas ? `Taxas de entrega (o cliente paga a taxa junto, na entrega; retirada na loja não tem taxa):\n  ${String(loja.entregas).trim().split("\n").join("\n  ")}` : ""}
   ${loja.pixChave ? `Chave Pix: ${loja.pixChave}${loja.pixTitular ? ` (${loja.pixTitular}${loja.pixBanco ? `, ${loja.pixBanco}` : ""})` : ""}` : ""}
   Garantia: ${loja.garantia || "(não cadastrada: se perguntarem, chame o dono)"}
   ${site ? `Site: ${site}. Quando precisar de algo que não está aqui (produtos, serviços, políticas), leia o site com web_fetch. Só use páginas desse site.` : ""}
@@ -652,6 +665,8 @@ export function criarNucleo(S, ctx = {}) {
   14. Pedido de desconto ("faz por menos?", "tem desconto?", "consegue melhorar?", "à vista sai quanto?" depois de já ter o valor): use pedir_desconto_dono com o valor que você sugere (um desconto pequeno que feche a venda) e não responda nada ao cliente nessa vez. Quando o dono liberar, responda na hora, animado ("Olá, consigo sim um descontinho pra ti!"), com o valor novo, e conduza para fechar. Se ele negar, segure o preço com valor, sem dizer que consultou alguém.
 
 ${loja.soNaEntrega !== false ? `  15. Pagamento é SEMPRE só na entrega (ou na retirada na loja): o cliente paga quando recebe o aparelho. Ao falar de pagamento, fechar a venda ou combinar a entrega, avise com naturalidade que o pagamento é só na entrega.${loja.pixChave ? ` Se o cliente for pagar no Pix ou pedir a chave, pode mandar a chave Pix para ele deixar salva, dizendo que é para pagar na hora da entrega. Mande a chave numa mensagem separada (com ---), só ela, para ficar fácil de copiar: "${loja.pixChave}", e diga de quem é (${loja.pixTitular || marca.nome}${loja.pixBanco ? `, ${loja.pixBanco}` : ""}).` : ""} Nunca peça pagamento antecipado, sinal, adiantamento ou comprovante antes da entrega, a não ser que a nota de sistema diga que o dono pediu isso nesta negociação; aí siga exatamente o que ele pediu (valor e prazo). Reparo segue a regra 11.
+` : ""}
+${loja.entregas ? `  16. Entrega: antes de falar a taxa, pergunte o bairro e a cidade (se ele ainda não disse). Use só as taxas de entrega da loja; bairro da lista sem taxa: diga que a entrega é sem custo. Some a taxa ao valor quando passar o total. Lugar que não está na lista: não invente valor; use pedir_decisao_dono (produto "Entrega em <bairro, cidade>", situação "taxa de entrega não cadastrada") e diga ao cliente, curto, que já confirma a taxa.
 ` : ""}
   # Formato da resposta
   Escreva só o texto que vai para o cliente, pronto para o WhatsApp. Mensagens curtas, como gente de verdade escreve. Para mandar mais de uma mensagem separada, ponha uma linha só com --- entre elas. Pode usar *negrito* do WhatsApp com moderação; nada de títulos ou listas longas.
