@@ -52,6 +52,28 @@ nav .ic { width: 20px; text-align: center; }
 .selo { margin-left: auto; background: var(--erro); color: #fff; border-radius: 99px; font-size: .72rem; font-weight: 700; padding: 0 7px; min-width: 20px; text-align: center; }
 nav button.ativo .selo { background: var(--marca-texto); color: var(--marca); }
 nav .curto { display: none; }
+nav .ic { display: grid; place-items: center; }
+nav .ic svg { width: 20px; height: 20px; }
+nav button { transition: background .15s, color .15s; }
+.btn { transition: background .15s, border-color .15s, transform .08s, opacity .15s; }
+.btn:active:not(:disabled) { transform: scale(.97); }
+:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.vista.entrando { animation: entrar .18s ease-out; }
+@keyframes entrar { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+* { scrollbar-width: thin; scrollbar-color: var(--sup3) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--sup3); border-radius: 8px; }
+.conv-item .nome small.tem-nl { color: var(--ok); font-weight: 600; }
+.conv-item .prev { display: flex; gap: 8px; align-items: center; }
+.conv-item .prev-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-item .quem-ia { font-weight: 600; color: var(--suave); }
+.nl { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--ok); color: #0f0f0f; font-size: .72rem; font-weight: 800; display: grid; place-items: center; }
+.rodape-lateral .crmy .versao { color: var(--suave); font-weight: 500; font-size: .7rem; margin-left: 2px; }
+.rodape-lateral .sinc { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.ponto { width: 7px; height: 7px; border-radius: 50%; background: var(--suave); flex: none; }
+.ponto.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(61,220,132,.15); }
+.ponto.alerta { background: var(--alerta); }
+.ponto.erro { background: var(--erro); }
 /* Configurações em abas (coluna à esquerda) */
 .cfg { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
 .cfg-abas { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 8px; background: var(--sup); border: 1px solid var(--borda); border-radius: 14px; padding: 8px; }
@@ -85,6 +107,10 @@ body.bloqueado .lateral { display: none; }
 .kpi b { display: block; font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
 .kpi span { color: var(--suave); font-size: .85rem; }
 .kpi.destaque { border-color: var(--marca); }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi[data-a] { transition: border-color .15s, transform .15s; }
+.kpi[data-a]:hover { border-color: #555; transform: translateY(-1px); }
+.kpi.destaque[data-a]:hover { border-color: var(--marca); }
 .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--borda); background: var(--sup2); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: .9rem; white-space: nowrap; }
 .btn:hover { border-color: #555; }
 .btn.prim { background: var(--marca); color: var(--marca-texto); border-color: var(--marca); }
@@ -133,7 +159,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--marca); out
 .conv-item .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
 .chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: #0b0b0b; }
 .chat-topo { padding: 12px 18px; border-bottom: 1px solid var(--borda); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--sup); }
-.chat-topo .quem { display: flex; flex-direction: column; line-height: 1.2; margin-right: auto; min-width: 0; }
+.chat-topo .quem { display: flex; flex-direction: column; line-height: 1.25; margin-right: auto; min-width: 0; }
+.chat-topo .quem > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; }
+.opcoes-chat { display: none; }
 .chat-topo select { width: auto; padding: 6px 9px; font-size: .84rem; }
 .voltar { display: none; }
 .msgs { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
@@ -211,10 +240,12 @@ dialog::backdrop { background: rgba(0,0,0,.65); }
 dialog .cab { padding: 16px 20px; border-bottom: 1px solid var(--borda); display: flex; align-items: center; }
 dialog .corpo { padding: 18px 20px; overflow-y: auto; max-height: calc(100vh - 180px); }
 dialog .pe { padding: 12px 20px; border-top: 1px solid var(--borda); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-.toast { background: var(--sup2); border: 1px solid var(--borda); border-left: 4px solid var(--marca); padding: 10px 14px; border-radius: 10px; max-width: 360px; font-size: .88rem; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-.toast.erro { border-left-color: var(--erro); }
-.toast.ok { border-left-color: var(--ok); }
+.toasts { position: fixed; right: 18px; top: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 60; pointer-events: none; }
+.toast { pointer-events: auto; cursor: pointer; display: flex; gap: 10px; align-items: flex-start; background: rgba(34,34,34,.96); backdrop-filter: blur(8px); border: 1px solid var(--borda); padding: 9px 14px 9px 10px; border-radius: 12px; max-width: 340px; font-size: .84rem; line-height: 1.35; box-shadow: 0 10px 30px rgba(0,0,0,.45); opacity: 0; transform: translateY(-6px); transition: opacity .2s, transform .2s; }
+.toast.visivel { opacity: 1; transform: none; }
+.toast-ic { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; font-weight: 800; background: var(--sup3); color: var(--suave); margin-top: 1px; }
+.toast.ok .toast-ic { background: var(--ok); color: #0f0f0f; }
+.toast.erro .toast-ic { background: var(--erro); color: #0f0f0f; }
 pre.prompt { white-space: pre-wrap; background: var(--fundo); border: 1px solid var(--borda); border-radius: 10px; padding: 12px; font-size: .78rem; max-height: 60vh; overflow: auto; }
 .exemplo { background: var(--sup2); border-radius: 10px; padding: 10px 12px; font-size: .85rem; }
 .exemplo .c { color: var(--suave); }
@@ -230,6 +261,17 @@ pre.prompt { white-space: pre-wrap; background: var(--fundo); border: 1px solid 
   nav { flex-direction: column; gap: 4px; }
   nav button { position: relative; flex-direction: column; justify-content: center; gap: 3px; padding: 8px 2px; text-align: center; line-height: 1.1; }
   nav .ic { width: auto; font-size: 1.25rem; }
+  nav .ic svg { width: 22px; height: 22px; }
+  .opcoes-chat { display: inline-flex; }
+  .chat-ctrl { display: none; }
+  .chat-ctrl.aberto { display: flex; }
+  .chat-ctrl select { flex: 1 1 45%; min-width: 0; }
+  .toasts { left: 76px; right: 10px; top: calc(10px + env(safe-area-inset-top)); align-items: stretch; }
+  .toast { max-width: none; font-size: .8rem; padding: 8px 12px 8px 9px; }
+  .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { padding: 12px; }
+  .kpi b { font-size: 1.35rem; }
+  .kpi span { font-size: .76rem; line-height: 1.25; display: block; margin-top: 2px; }
   nav .txt { display: none; }
   nav .curto { display: block; font-size: .62rem; letter-spacing: -.01em; }
   nav .selo { position: absolute; top: 3px; right: 5px; margin: 0; font-size: .6rem; min-width: 15px; padding: 0 4px; }
@@ -649,12 +691,12 @@ async function sincronizarNuvem() {
 function rodapeNuvem() {
   const el = $("#rodape");
   if (!el) return;
-  let txt;
-  if (!NUVEM.usuario) txt = "Dados guardados só neste navegador.";
-  else if (NUVEM.erro) txt = `⚠️ Sem conexão com o Supabase${NUVEM.pendentes.size ? `: ${NUVEM.pendentes.size} alteração(ões) esperando` : ""}.`;
-  else if (NUVEM.pendentes.size) txt = "☁️ Salvando no Supabase…";
-  else txt = `☁️ Salvo no Supabase${NUVEM.salvoEm ? ` às ${hora(NUVEM.salvoEm)}` : ""}.`;
-  el.innerHTML = `<div class="crmy">${ICONE_CRMY}CRMY</div>${esc(txt)}<br>v${VERSAO}`;
+  let txt, cor;
+  if (!NUVEM.usuario) { txt = "Só neste navegador"; cor = "alerta"; }
+  else if (NUVEM.erro) { txt = `Sem conexão${NUVEM.pendentes.size ? ` · ${NUVEM.pendentes.size} esperando` : ""}`; cor = "erro"; }
+  else if (NUVEM.pendentes.size) { txt = "Salvando…"; cor = "alerta"; }
+  else { txt = `Sincronizado${NUVEM.salvoEm ? ` · ${hora(NUVEM.salvoEm)}` : ""}`; cor = "ok"; }
+  el.innerHTML = `<div class="crmy">${ICONE_CRMY}CRMY <span class="versao">v${VERSAO}</span></div><div class="sinc" title="${esc(NUVEM.erro || "Dados salvos na nuvem")}"><span class="ponto ${cor}"></span>${esc(txt)}</div>`;
 }
 async function conectarNuvem(url, chave, email, senha) {
   url = url.trim().replace(/\/+$/, "");
@@ -765,11 +807,18 @@ function aplicarMarca() {
 
 // ---------------------------------------------------------------- avisos
 function toast(msg, tipo = "") {
+  const caixa = $("#toasts");
+  // mesmo aviso de novo: só renova; no máximo 2 na tela
+  for (const x of caixa.children) if (x.dataset.msg === msg) x.remove();
+  while (caixa.children.length >= 2) caixa.firstElementChild.remove();
   const t = document.createElement("div");
   t.className = `toast ${tipo}`;
-  t.textContent = msg;
-  $("#toasts").append(t);
-  setTimeout(() => t.remove(), tipo === "erro" ? 9000 : 4500);
+  t.dataset.msg = msg;
+  t.innerHTML = `<span class="toast-ic">${tipo === "erro" ? "!" : tipo === "ok" ? "✓" : "i"}</span><span>${esc(msg)}</span>`;
+  t.addEventListener("click", () => t.remove());
+  caixa.append(t);
+  requestAnimationFrame(() => t.classList.add("visivel"));
+  setTimeout(() => { t.classList.remove("visivel"); setTimeout(() => t.remove(), 250); }, tipo === "erro" ? 7000 : 3200);
 }
 let audio;
 function bip() {
@@ -1191,6 +1240,18 @@ async function verificarFollowups() {
 // TELAS
 // =====================================================================
 const rota = { vista: "painel", id: null };
+/** Ícones de linha, todos no mesmo traço (no lugar dos emojis coloridos). */
+const svgIcone = (corpo) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${corpo}</svg>`;
+const ICONES = {
+  painel: svgIcone('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+  conversas: svgIcone('<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/>'),
+  funil: svgIcone('<path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/>'),
+  aprovacoes: svgIcone('<path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/>'),
+  agenda: svgIcone('<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/>'),
+  catalogo: svgIcone('<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>'),
+  ia: svgIcone('<path d="M12 3l1.7 4.6L18.5 9l-4.8 1.6L12 15.2l-1.7-4.6L5.5 9l4.8-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
+  config: svgIcone('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
+};
 const NAV = [
   ["painel", "📊", "Painel", "Painel"], ["conversas", "💬", "Conversas", "Conversas"], ["funil", "🧲", "Funil de clientes", "Funil"], ["aprovacoes", "🔔", "Aprovações", "Aprovações"],
   ["agenda", "📅", "Agenda", "Agenda"], ["catalogo", "📱", "Catálogo", "Catálogo"], ["ia", "🧠", "Cérebro da IA", "IA"], ["config", "⚙️", "Configurações", "Config"],
@@ -1203,7 +1264,7 @@ function contadores() {
 }
 function renderNav() {
   const n = contadores();
-  $("#nav").innerHTML = NAV.map(([v, ic, txt, curto]) => `<button data-a="ir" data-v="${v}" class="${rota.vista === v ? "ativo" : ""}" title="${txt}"><span class="ic">${ic}</span><span class="txt">${txt}</span><span class="curto">${curto}</span>${n[v] ? `<span class="selo">${n[v]}</span>` : ""}</button>`).join("");
+  $("#nav").innerHTML = NAV.map(([v, ic, txt, curto]) => `<button data-a="ir" data-v="${v}" class="${rota.vista === v ? "ativo" : ""}" title="${txt}"><span class="ic">${ICONES[v] || ic}</span><span class="txt">${txt}</span><span class="curto">${curto}</span>${n[v] ? `<span class="selo">${n[v]}</span>` : ""}</button>`).join("");
   const total = n.aprovacoes + n.conversas;
   document.title = `${total ? `(${total}) ` : ""}CRMY · ${S.config.marca.nome}`;
 }
@@ -1225,7 +1286,10 @@ function render() {
   for (const el of $$("[data-manter]", vista)) manter[el.id] = { v: el.value, foco: document.activeElement === el, s: el.selectionStart };
   const rolagem = $(".msgs", vista);
   const fimRolagem = rolagem ? rolagem.scrollHeight - rolagem.scrollTop - rolagem.clientHeight < 60 : true;
-  vista.className = `vista${["conversas"].includes(rota.vista) ? " cheia" : ""}`;
+  const chaveTela = `${rota.vista}/${rota.id || ""}`;
+  const trocouTela = render.ultimaTela !== undefined && render.ultimaTela !== chaveTela;
+  render.ultimaTela = chaveTela;
+  vista.className = `vista${["conversas"].includes(rota.vista) ? " cheia" : ""}${trocouTela ? " entrando" : ""}`;
   const bloqueado = loginObrigatorio() && !NUVEM.usuario;
   document.body.classList.toggle("bloqueado", bloqueado);
   if (bloqueado) vista.className = "vista";
@@ -1294,7 +1358,7 @@ TELAS.painel = () => {
   <button class="btn prim" data-a="cliente-teste">+ Simular cliente no WhatsApp</button></div>
   <div class="aviso info" style="margin-top:12px">Agora: <b>${esc(MODOS_GERAIS[modoEfetivo(null)])}</b>${noturno() ? ` (horário noturno, até ${esc(S.config.atendimento.noiteFim)})` : ""}. <a href="/modo">Trocar no botão</a></div>
   <h2>Hoje</h2>
-  <div class="grade g4">
+  <div class="grade kpis">
     <div class="cartao kpi ${pend.length ? "destaque" : ""}" data-a="ir" data-v="aprovacoes" style="cursor:pointer"><b>${pend.length}</b><span>aprovações e decisões esperando você</span></div>
     <div class="cartao kpi"><b>${hoje.length}</b><span>compromissos hoje</span></div>
     <div class="cartao kpi" data-a="ir" data-v="funil" style="cursor:pointer"><b>${S.contatos.filter((c) => { const e = estadoFollowup(c); return e.situacao === "devido" || (e.situacao === "agendado" && e.devido <= hojeFim); }).length}</b><span>follow-ups para hoje</span></div>
@@ -1315,6 +1379,14 @@ TELAS.painel = () => {
 // ---------------------------------------------------------------- Conversas
 let buscaConv = "";
 let filtroCategoria = "";
+let opcoesChat = false;
+/** +5548999990001 -> "+55 48 99999-0001". */
+function fmtTelefone(t) {
+  const d = soDigitos(t);
+  if (d.length === 13 && d.startsWith("55")) return `+55 ${d.slice(2, 4)} ${d.slice(4, 9)}-${d.slice(9)}`;
+  if (d.length === 12 && d.startsWith("55")) return `+55 ${d.slice(2, 4)} ${d.slice(4, 8)}-${d.slice(8)}`;
+  return d ? `+${d}` : "";
+}
 const chipCategoria = (c) => (c.categoria && CATEGORIAS[c.categoria] ? `<span class="etq ${c.categoria === "fornecedor" ? "am" : c.categoria === "pessoal" ? "" : "az"}" title="${esc(c.categoriaMotivo || "")}${c.categoriaManual ? " (marcado por você)" : ""}">${CATEGORIAS[c.categoria]}</span>` : "");
 let enviarComo = "cliente";
 TELAS.conversas = () => {
@@ -1334,9 +1406,9 @@ TELAS.conversas = () => {
         const pend = S.aprovacoes.some((a) => a.contatoId === x.id && a.status === "pendente");
         return `<div class="conv-item ${x.id === rota.id ? "ativo" : ""}" data-a="abrir-conv" data-id="${x.id}">
           <div class="avatar">${esc(iniciais(x.nome))}</div>
-          <div class="meio"><div class="nome"><span>${esc(nomeCli(x))}</span><small>${ult ? hora(ult.em) : ""}</small></div>
-          <div class="prev">${ult ? `${ult.de === "cliente" ? "" : ult.de === "ia" ? "🤖 " : "Você: "}${esc(ult.texto)}` : "<i>sem mensagens</i>"}</div>
-          <div class="tags">${chipCategoria(x)}<span class="etq">${esc(NOME_ESTAGIO[x.estagio])}</span>${x.naoLidas ? `<span class="etq vm">${x.naoLidas} nova(s)</span>` : ""}${cv?.rascunho ? `<span class="etq az">sugestão</span>` : ""}${pend ? `<span class="etq am">aprovação</span>` : ""}${x.precisaDono ? `<span class="etq vm">precisa de você</span>` : ""}${rodando.has(x.id) ? `<span class="etq vd">IA escrevendo</span>` : ""}</div></div></div>`;
+          <div class="meio"><div class="nome"><span>${esc(nomeCli(x))}</span><small class="${x.naoLidas ? "tem-nl" : ""}">${ult ? hora(ult.em) : ""}</small></div>
+          <div class="prev"><span class="prev-txt">${ult ? `${ult.de === "cliente" ? "" : ult.de === "ia" ? `<b class="quem-ia">IA:</b> ` : `<b class="quem-ia">Você:</b> `}${esc(ult.texto)}` : "<i>sem mensagens</i>"}</span>${x.naoLidas ? `<span class="nl">${x.naoLidas}</span>` : ""}</div>
+          <div class="tags">${chipCategoria(x)}<span class="etq">${esc(NOME_ESTAGIO[x.estagio])}</span>${cv?.rascunho ? `<span class="etq az">sugestão</span>` : ""}${pend ? `<span class="etq am">aprovação</span>` : ""}${x.precisaDono ? `<span class="etq vm">precisa de você</span>` : ""}${rodando.has(x.id) ? `<span class="etq vd">IA escrevendo</span>` : ""}</div></div></div>`;
       }).join("") : `<div class="vazio">Nenhuma conversa ainda.<br>Crie um <b>cliente de teste</b> e mande mensagens como se fosse ele.</div>`}</div>
     </section>
     <section class="chat">${c ? telaChat(c) : `<div class="vazio" style="margin:auto">Escolha uma conversa.</div>`}</section>
@@ -1356,12 +1428,15 @@ function telaChat(c) {
   <div class="chat-topo">
     <button class="btn pq voltar" data-a="ir" data-v="conversas">←</button>
     <div class="avatar">${esc(iniciais(c.nome))}</div>
-    <div class="quem"><b>${esc(nomeCli(c))}</b><span class="suave peq">${c.telefone ? `+${esc(c.telefone)}` : "sem número"}${c.interesse ? ` · ${esc(c.interesse)}` : ""}</span></div>
-    <select data-a="mudar-categoria" data-id="${c.id}" title="Etiqueta da conversa${c.categoriaMotivo ? `: ${esc(c.categoriaMotivo)}` : ""}"><option value="">🏷️ ${c.categoria && !c.categoriaManual ? `${CATEGORIAS[c.categoria]} (IA)` : "Etiqueta: a IA escolhe"}</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${c.categoriaManual && c.categoria === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+    <div class="quem"><b>${esc(nomeCli(c))}</b><span class="suave peq">${c.telefone ? esc(fmtTelefone(c.telefone)) : "sem número"}${c.interesse ? ` · ${esc(c.interesse)}` : ""}</span></div>
+    <button class="btn pq opcoes-chat" data-a="chat-opcoes" aria-expanded="${opcoesChat ? "true" : "false"}" title="Etiqueta, quem responde e fase">${opcoesChat ? "Fechar" : "Opções"}</button>
+    <button class="btn pq" data-a="ficha" data-id="${c.id}">Ficha</button>
+    <div class="chat-ctrl ${opcoesChat ? "aberto" : ""}">
+    <select data-a="mudar-categoria" data-id="${c.id}" title="Etiqueta da conversa${c.categoriaMotivo ? `: ${esc(c.categoriaMotivo)}` : ""}"><option value="">${c.categoria && !c.categoriaManual ? `${CATEGORIAS[c.categoria]} (IA)` : "Etiqueta: a IA escolhe"}</option>${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${c.categoriaManual && c.categoria === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     <select data-a="mudar-modo" data-id="${c.id}" title="Quem responde nesta conversa (agora: ${esc(MODOS_GERAIS[modoEfetivo(c)])})">${Object.entries(MODOS).map(([k, v]) => `<option value="${k}" ${c.modo === k ? "selected" : ""}>${v}</option>`).join("")}</select>
     ${!c.teste && (c.iaLiberada || !N.iaPodeAtender(c)) ? `<button class="btn pq ${c.iaLiberada ? "" : "ok"}" data-a="liberar-ia" data-id="${c.id}" title="${c.iaLiberada ? "A IA está liberada para este cliente" : "Cliente fora da regra da IA (antigo ou não veio de anúncio): só você responde"}">${c.iaLiberada ? "🔒 Bloquear IA" : "🔓 Liberar IA"}</button>` : ""}
     <select data-a="mudar-estagio" data-id="${c.id}" title="Fase">${ESTAGIOS.map(([k, v]) => `<option value="${k}" ${c.estagio === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-    <button class="btn pq" data-a="ficha" data-id="${c.id}">Ficha</button>
+    </div>
   </div>
   ${c.precisaDono ? `<div class="aviso" style="margin:10px 14px 0">🙋 A IA chamou você: ${esc(c.precisaDono)} <button class="btn pq" data-a="resolver-dono" data-id="${c.id}">Resolvido</button></div>` : ""}
   <div class="msgs">${msgs || `<div class="vazio">Mande a primeira mensagem como se fosse o cliente (botão <b>Cliente</b> abaixo) para ver a IA atender.</div>`}${rodando.has(c.id) ? `<div class="digitando">${esc(S.config.marca.nomeIA)} está escrevendo</div>` : ""}</div>
@@ -1437,7 +1512,7 @@ TELAS.funil = () => {
     <button class="btn" data-a="fu-regras">⚙️ Regras de follow-up</button>
     <button class="btn" data-a="novo-contato">+ Novo cliente</button></div>
   <p class="suave peq">A IA move os cartões e atualiza temperatura, valor, próximo passo e resumo conforme a conversa anda. Você também pode arrastar. Cartão com brilho = a IA acabou de mexer.</p>
-  <div class="grade g4" style="margin:12px 0">
+  <div class="grade kpis" style="margin:12px 0">
     <div class="cartao kpi"><b>${brl(abertos.reduce((t, c) => t + (Number(c.valor) || 0), 0))}</b><span>em negociação · ${abertos.length} em aberto</span></div>
     <div class="cartao kpi ${fuHoje.length ? "destaque" : ""}"><b>${fuHoje.length}</b><span>follow-ups para hoje</span></div>
     <div class="cartao kpi"><b>${esperando.length}</b><span>clientes esperando resposta</span></div>
@@ -2091,6 +2166,12 @@ ACOES["aprovar-valor"] = (el) => {
   responderAprovacao(el.dataset.id, "aprovada", v, comentario(el.dataset.id));
 };
 ACOES.recusar = (el) => responderAprovacao(el.dataset.id, "recusada", null, comentario(el.dataset.id));
+ACOES["chat-opcoes"] = (el) => {
+  opcoesChat = !opcoesChat;
+  document.querySelector(".chat-ctrl")?.classList.toggle("aberto", opcoesChat);
+  el.textContent = opcoesChat ? "Fechar" : "Opções";
+  el.setAttribute("aria-expanded", String(opcoesChat));
+};
 ACOES["filtro-categoria"] = (el) => { filtroCategoria = el.value; render(); };
 ACOES["mudar-categoria"] = (el) => { N.definirCategoria(el.dataset.id, el.value); render(); };
 ACOES.etiquetar = async (el) => {
