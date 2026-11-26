@@ -1607,7 +1607,7 @@ TELAS.painel = () => {
   </div>
   <div class="painel-grade">
     <div>
-      <div class="cartao">${cardCab(`Clientes comprando ${comprando.length ? `<span class="conta">${comprando.length}</span>` : ""}`, linkIr("funil", "Ver funil"))}
+      <div class="cartao">${cardCab(`Clientes comprando ${comprando.length ? `<span class="conta">${comprando.length}</span>` : ""}`, `<button class="link" data-a="repescar" title="A IA acha os clientes quentes que não fecharam e reativa com uma oportunidade exclusiva">Reativar quentes</button>${linkIr("funil", "Ver funil")}`)}
         <div class="lista">${comprando.length ? comprando.slice(0, 12).map(linhaComprador).join("") : `<div class="vazio">Nenhum cliente comprando agora.</div>`}</div>
         ${comprando.length > 12 ? `<div style="margin-top:10px">${linkIr("funil", `Ver os outros ${comprando.length - 12} no funil`)}</div>` : ""}</div>
       <div class="cartao">${cardCab("Atividade recente")}
@@ -1766,7 +1766,7 @@ TELAS.funil = () => {
   const abertos = compradores.filter((c) => !["fechado", "perdido", "posvenda"].includes(c.estagio));
   return `
   ${cab("Funil de clientes", "Só clientes que querem comprar iPhone ou Android. Reparo e outros assuntos ficam em Conversas. A IA move os cartões conforme a conversa anda.",
-    `<button class="btn" data-a="fu-regras">${ICONES.config}Regras de follow-up</button><button class="btn prim" data-a="novo-contato">${ICONES.mais}Novo cliente</button>`)}
+    `<button class="btn" data-a="repescar" title="A IA acha os clientes quentes que não fecharam e reativa com uma oportunidade exclusiva">${ICONES.relogio}Reativar quentes</button><button class="btn" data-a="fu-regras">${ICONES.config}Regras de follow-up</button><button class="btn prim" data-a="novo-contato">${ICONES.mais}Novo cliente</button>`)}
   <div class="grade kpis">
     ${kpi("dinheiro", "Em negociação", brl(abertos.reduce((t, c) => t + (Number(c.valor) || 0), 0)), `${abertos.length} em aberto`)}
     ${kpi("relogio", "Follow-ups hoje", fuHoje.length, "para reativar", { destaque: fuHoje.length })}
@@ -2364,6 +2364,66 @@ ACOES["testar-voz"] = async (el) => {
   } catch (e) { toast(`Voz: ${e.message}`, "erro"); }
   el.disabled = false; el.textContent = t;
 };
+
+
+// Repescagem: a IA acha os clientes quentes que não fecharam e reativa com uma oportunidade exclusiva
+let repescagem = null; // { itens, marcados:Set }
+function telaRepescagem() {
+  const r = repescagem;
+  if (!r.itens) return `<div class="vazio">A IA está lendo ${r.total} conversa(s) de compra que esfriaram…</div>`;
+  if (!r.itens.length) return `<div class="vazio">Nenhum cliente quente parado agora. As conversas de compra estão em dia.</div>`;
+  return `<p class="suave peq" style="margin-top:0">Clientes que queriam comprar e não fecharam: a última mensagem deles ficou sem resposta nossa, ou eles pararam de responder há 2 dias ou mais. Quem já recebeu repescagem nesta semana não aparece.</p>
+  <label class="campo" style="margin-bottom:12px"><span>Oportunidade exclusiva <small>(o que a IA oferece; deixe vazio para ela usar só benefícios reais, sem inventar desconto)</small></span>
+    <input type="text" id="rep-oferta" data-manter value="${esc(S.config.repescagem?.oferta || "")}" placeholder="Ex.: R$ 100 de desconto no Pix até sexta · película e capa de brinde"></label>
+  <div class="linha" style="margin-bottom:8px"><b>${r.marcados.size} de ${r.itens.length} marcados</b><span class="espaco"></span><button class="btn pq" data-a="rep-todos">${r.marcados.size === r.itens.length ? "Desmarcar todos" : "Marcar todos"}</button></div>
+  <div class="lista">${r.itens.map((it) => { const c = contato(it.id); return `<label class="item" style="cursor:pointer"><input type="checkbox" data-a="rep-marcar" data-id="${it.id}" ${r.marcados.has(it.id) ? "checked" : ""}>
+    <div class="espaco"><b>${esc(nomeCli(c))}</b>${it.produto ? ` <span class="suave">· ${esc(it.produto)}</span>` : ""}<div class="suave peq">${esc(it.motivo)}</div></div>
+    <span class="etq ${it.situacao === "sem_resposta" ? "vm" : "am"}">${it.situacao === "sem_resposta" ? "ficou sem resposta nossa" : `${it.dias} dias sem responder`}</span></label>`; }).join("")}</div>`;
+}
+function abrirRepescagem() {
+  const r = repescagem;
+  abrirModal("Reativar clientes quentes", telaRepescagem(), r.itens?.length ? [
+    { texto: "Cancelar", acao: () => { repescagem = null; fecharModal(); } },
+    { texto: `Reativar ${r.marcados.size} cliente(s)`, classe: "prim", acao: enviarRepescagem },
+  ] : [{ texto: "Fechar", acao: () => { repescagem = null; fecharModal(); } }]);
+}
+ACOES.repescar = async () => {
+  if (!iaPronta()) return toast(avisoIa(), "erro");
+  const cand = N.candidatosRepescagem();
+  repescagem = { total: cand.length, itens: null, marcados: new Set() };
+  abrirRepescagem();
+  try {
+    repescagem.itens = cand.length ? (await N.avaliarRepescagem(cand)).sort((a, b) => Number(b.culpaNossa) - Number(a.culpaNossa) || a.dias - b.dias) : [];
+    repescagem.marcados = new Set(repescagem.itens.map((it) => it.id));
+    abrirRepescagem();
+  } catch (e) { repescagem = null; fecharModal(); toast(e.message, "erro"); }
+};
+ACOES["rep-marcar"] = (el) => { if (!repescagem) return; el.checked ? repescagem.marcados.add(el.dataset.id) : repescagem.marcados.delete(el.dataset.id); guardarOfertaRep(); abrirRepescagem(); };
+ACOES["rep-todos"] = () => { if (!repescagem) return; repescagem.marcados = repescagem.marcados.size === repescagem.itens.length ? new Set() : new Set(repescagem.itens.map((it) => it.id)); guardarOfertaRep(); abrirRepescagem(); };
+function guardarOfertaRep() {
+  const el = $("#rep-oferta");
+  if (!el) return;
+  S.config.repescagem = { ...(S.config.repescagem || {}), oferta: el.value.trim() };
+}
+async function enviarRepescagem() {
+  const r = repescagem;
+  if (!r?.marcados.size) return toast("Marque pelo menos um cliente.", "erro");
+  guardarOfertaRep(); salvar("config");
+  const oferta = S.config.repescagem?.oferta || "";
+  const itens = r.itens.filter((it) => r.marcados.has(it.id));
+  repescagem = null; fecharModal();
+  toast(`Reativando ${itens.length} cliente(s)… pode seguir usando o CRM.`);
+  let ok = 0;
+  for (const it of itens) {
+    const fu = N.prepararCampanha({ ...it, tipo: "repescagem", oferta });
+    if (await rodarAgente(it.id, { enviar: true, extra: { followup: "repescagem" } })) ok++;
+    else fu.desfazer();
+    await pausa(800);
+  }
+  registrar(`Repescagem: ${ok} de ${itens.length} cliente(s) reativado(s)${oferta ? ` com a oferta "${oferta}"` : ""}.`);
+  toast(`${ok} de ${itens.length} cliente(s) reativado(s).`, ok ? "ok" : "erro");
+  atualizarTela();
+}
 
 // Funil e follow-up
 ACOES["filtro-funil"] = (el) => { filtroFunil = el.dataset.v; render(); };

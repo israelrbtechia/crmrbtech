@@ -1388,14 +1388,18 @@ Escreva tudo em português do Brasil.`;
   function prepararCampanha(item) {
     const c = contato(item.id);
     const conv = conversa(item.id);
-    const antes = { reativadoProposta: c.reativadoProposta, reativadoEm: c.reativadoEm, posVendaEm: c.posVendaEm };
-    const nota = item.tipo === "posvenda"
+    const antes = { reativadoProposta: c.reativadoProposta, reativadoEm: c.reativadoEm, posVendaEm: c.posVendaEm, repescadoEm: c.repescadoEm };
+    const oferta = String(item.oferta || "").trim();
+    const nota = item.tipo === "repescagem"
+      ? `REPESCAGEM (cliente quente que não fechou): ${item.situacao === "sem_resposta" ? "a última mensagem do cliente ficou SEM RESPOSTA nossa. Comece com um pedido de desculpa leve pela demora, numa frase curta e sem justificativa, e responda o que ele tinha perguntado." : `o cliente não responde há ${item.dias} dias.`}${item.motivo ? ` O que aconteceu: ${item.motivo}.` : ""} Retome de onde parou, citando o aparelho que ele queria${item.produto ? ` (${item.produto})` : ""}, e ofereça uma OPORTUNIDADE EXCLUSIVA só para ele: ${oferta ? `"${oferta}". Use exatamente essa oportunidade; não invente outro desconto, preço ou prazo.` : "use um motivo real (condição no Pix, brindes, separar a unidade pra ele, garantia), sem inventar desconto, preço ou prazo."} No máximo 2 mensagens curtas, do jeito da loja, terminando com uma pergunta simples de fechamento (ex.: "Separo pra ti?"). Não diga que é campanha, promoção em massa nem que alguém pediu.`
+      : item.tipo === "posvenda"
       ? `PÓS-VENDA (agente de follow-up): o cliente comprou há ${item.dias} dias${c.interesse ? ` (${c.interesse})` : ""}. Mande UMA mensagem curta e calorosa perguntando como está o uso do aparelho e se ele precisa de algo (película, capinha, carregador, ajuda para configurar). Interesse de verdade na pessoa, nada de venda forçada. Se ele precisar de algo, ajude.`
       : `REATIVAÇÃO (agente de follow-up): o cliente recebeu a proposta há ${item.dias} dias e não respondeu. Escreva UMA mensagem curta e leve retomando a conversa, com um motivo para ele responder (a condição no Pix ainda vale, posso separar o teu, uma dúvida que ficou aberta), sem pressão e sem repetir a proposta inteira. Orientação do dono para follow-ups: ${S.config.followup.instrucoes || "-"}`;
     if (item.tipo === "posvenda") c.posVendaEm = agoraISO();
+    else if (item.tipo === "repescagem") c.repescadoEm = agoraISO();
     else { c.reativadoProposta = item.ref; c.reativadoEm = agoraISO(); }
     conv.notas.push(nota);
-    evento(c.id, item.tipo === "posvenda" ? `💬 Pós-venda: ${item.dias} dias depois da compra` : `⏰ Reativação: ${item.dias} dias sem resposta depois da proposta`);
+    evento(c.id, item.tipo === "repescagem" ? `🔥 Repescagem: ${item.situacao === "sem_resposta" ? "ficou sem resposta nossa" : `${item.dias} dias sem responder`}${oferta ? ` · oferta: ${oferta}` : ""}` : item.tipo === "posvenda" ? `💬 Pós-venda: ${item.dias} dias depois da compra` : `⏰ Reativação: ${item.dias} dias sem resposta depois da proposta`);
     salvar("contatos", `conv:${item.id}`);
     return {
       desfazer() {
@@ -1405,6 +1409,60 @@ Escreva tudo em português do Brasil.`;
         salvar("contatos", `conv:${item.id}`);
       },
     };
+  }
+
+
+  // ---------------------------------------------------------------- repescagem: quentes que não fecharam
+  /**
+   * Conversas de compra que esfriaram sem fechar (até 45 dias): a última mensagem do cliente ficou sem
+   * resposta nossa, ou ele parou de responder há 2+ dias. A IA avalia quais são quentes de verdade.
+   */
+  function candidatosRepescagem(agora = new Date(), { diasMin = 2, diasMax = 45 } = {}) {
+    const lista = [];
+    for (const c of S.contatos) {
+      if (!S.conv[c.id] || ["fechado", "posvenda"].includes(c.estagio)) continue;
+      if (c.categoria && !["compra", "troca"].includes(c.categoria)) continue;
+      if (S.aprovacoes.some((a) => a.contatoId === c.id && a.status === "pendente")) continue; // está com o dono
+      if (c.repescadoEm && agora - new Date(c.repescadoEm) < 7 * 864e5) continue; // já foi repescado nesta semana
+      if (dataDaCompra(c)) continue;
+      const msgs = mensagensReais(c.id);
+      const ult = msgs.at(-1);
+      if (!ult || !msgs.some((m) => m.de === "cliente")) continue;
+      const dias = (agora - new Date(ult.em)) / 864e5;
+      if (dias > diasMax) continue;
+      if (ult.de === "cliente") { if (agora - new Date(ult.em) >= 60 * 60e3) lista.push({ id: c.id, situacao: "sem_resposta", dias: Math.floor(dias) }); }
+      else if (dias >= diasMin) lista.push({ id: c.id, situacao: "sumiu", dias: Math.floor(dias) });
+    }
+    return lista;
+  }
+  const SCHEMA_REPESCAGEM = {
+    type: "object", additionalProperties: false, required: ["itens"],
+    properties: { itens: { type: "array", items: { type: "object", additionalProperties: false, required: ["id", "quente", "produto", "motivo", "culpa_nossa"], properties: { id: { type: "string" }, quente: { type: "boolean" }, produto: { type: "string" }, motivo: { type: "string" }, culpa_nossa: { type: "boolean" } } } } },
+  };
+  /** A IA lê as conversas candidatas e diz quais são clientes quentes que não fecharam, e por quê. */
+  async function avaliarRepescagem(candidatos) {
+    const saida = [];
+    for (let i = 0; i < candidatos.length; i += 10) {
+      const lote = candidatos.slice(i, i + 10).filter((it) => contato(it.id));
+      if (!lote.length) continue;
+      const texto = lote.map((it) => `## id ${it.id} · ${nomeCli(contato(it.id))} · ${it.situacao === "sem_resposta" ? `a última mensagem é do cliente e ficou sem resposta (${it.dias} dia(s))` : `cliente sem responder há ${it.dias} dias`}\n${mensagensReais(it.id).slice(-20).map((m) => `${{ cliente: "CLIENTE", ia: "LOJA (IA)", dono: "LOJA (dono)" }[m.de] || m.de}: ${cortar(m.texto || "", 300)}`).join("\n")}`).join("\n\n");
+      const r = await chamar({
+        system: `Você é gerente de vendas da ${S.config.marca.nome}, loja de iPhones e celulares. Para cada conversa, diga se é um cliente QUENTE que não fechou: tinha interesse real em comprar (perguntou preço ou modelo específico, negociou, falou em pagamento, troca, retirada ou entrega, pediu foto). Frio = só curiosidade, "só olhando", já comprou em outro lugar, disse que não quer, sem orçamento, ou não é compra.
+produto: o aparelho que ele queria, curto (ex.: "iPhone 14 128GB"), ou "" se não deu para saber.
+motivo: uma frase curta com por que não fechou (ex.: "achou caro e sumiu depois do preço", "perguntou da troca e ficou sem resposta").
+culpa_nossa: true quando a loja deixou escapar (não respondeu, demorou, não passou preço, não fez pergunta de fechamento, não chamou de volta).`,
+        messages: [{ role: "user", content: texto }],
+        output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA_REPESCAGEM } },
+      });
+      if (r.stop_reason !== "end_turn") continue;
+      let dados;
+      try { dados = JSON.parse(r.content.filter((b) => b.type === "text").map((b) => b.text).join("")); } catch { continue; }
+      for (const d of dados.itens || []) {
+        const it = lote.find((x) => x.id === d.id);
+        if (it && d.quente) saida.push({ ...it, produto: cortar(d.produto || "", 80), motivo: cortar(d.motivo || "", 200), culpaNossa: Boolean(d.culpa_nossa) });
+      }
+    }
+    return saida;
   }
 
   // ---------------------------------------------------------------- etiquetas de contexto
@@ -2058,6 +2116,6 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
     secaoSite, linhaCatalogo, promptSistema, beneficiosStatus, notaDeSistema, ferramentas,
     ocupadosLocais, executarFerramenta, mudarEstagio, mensagemAoDono,
     cadencia, naJanela, tempoPassado, estadoFollowup, prepararFollowup, marcarPerdido,
-    noturno, modoEfetivo, modoSemRegra, campanhasDevidas, prepararCampanha, dataDaCompra, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, descartarPedido, donoResponde, assistenteDono,
+    noturno, modoEfetivo, modoSemRegra, campanhasDevidas, prepararCampanha, candidatosRepescagem, avaliarRepescagem, dataDaCompra, iaPodeAtender, precisaEtiqueta, etiquetarContatos, definirCategoria, inspecionar, aplicarMelhoria, ignorarMelhoria, resumoInspecao, conversasParaInspecionar, detectarAnuncio, precisaSaudacao, anotarSaudacao, textoSaudacao, executarAgente, guardarRascunho, aplicarAprovacao, responderDecisao, descartarPedido, donoResponde, assistenteDono,
   };
 }
