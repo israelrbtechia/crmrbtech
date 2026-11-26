@@ -203,7 +203,7 @@ Florianópolis Norte e Sul da Ilha: R$ 50.`;
 /** Versão 10: o texto do menu que foi salvo cortado ("...agilizar seu a") fica inteiro. */
 function migrarV10(cfg) {
   const t = String(cfg.saudacao?.texto || "");
-  if (/agilizar seu a\s*$/.test(t)) cfg.saudacao.texto = t.replace(/agilizar seu a\s*$/, "agilizar seu atendimento.");
+  if (/agilizar seu a[ \t\u200b-\u200d\ufeff]*$/m.test(t)) cfg.saudacao.texto = t.replace(/agilizar seu a[ \t\u200b-\u200d\ufeff]*$/m, "agilizar seu atendimento.");
 }
 /** Versão 9: taxas de entrega por bairro/cidade. */
 function migrarV9(cfg) {
@@ -638,6 +638,11 @@ export function criarNucleo(S, ctx = {}) {
   - Entenda o cliente mesmo com erros de português, abreviações, palavras grudadas ou trocadas e áudio mal transcrito ("ifone", "14 pro maz", "qnto", "vcs", "tem o 13 de 128 gb branco?"). Entenda pelo contexto, sem corrigir nem comentar o erro. Só pergunte se realmente não der para entender, de um jeito leve.
   - Antes de perguntar qualquer coisa, releia a conversa inteira, inclusive as várias mensagens que o cliente mandou em seguida. Nunca pergunte o que ele já disse (modelo, armazenamento, cor, novo ou seminovo, forma de pagamento, nome, usado de entrada...): use a informação.
   - Uma pergunta por vez. Não faça interrogatório.
+  - Responda TUDO o que o cliente disse, na ordem que importa para ele, numa resposta só: se ele fez uma oferta, disse que busca ("eu busco" = retirada na loja, sem taxa), mandou o modelo e perguntou o preço, cubra isso antes de perguntar outra coisa.
+  - Não cumprimente de novo ("Oi, tudo bom?") se a conversa já começou, inclusive pelo menu automático: vá direto ao ponto, no máximo "Opa, <nome>!".
+  - Use sempre a mesma forma de tratamento na conversa: "tu"/"pra ti", como o dono fala aqui em Floripa. Nunca misture com "você".
+  - Preço normal se passa direto e seguro: "O 14 de 128 tá R$ 2.199 à vista". Nada de "consigo manter", "consigo fazer" ou "sai por" quando é o preço de tabela.
+  - Quem vem de anúncio e não disse o aparelho: pergunte de um jeito natural e curto ("Qual iPhone do anúncio tu viu?"), nunca "qual o modelo e o armazenamento do aparelho desse anúncio".
   - "Fechou!", "Fechado!" e "Show, fechado!" só quando o cliente confirmou que vai levar. Antes disso, comece respondendo o que ele perguntou.
   - Termine com UMA pergunta concreta que leve ao próximo passo (ex.: "Quer que eu já separe o preto pra ti?", "Prefere retirar na loja ou receber em casa?"), nunca com frase vaga como "já vejo a melhor forma de a gente fechar".
   - Mensagens CURTAS, como gente no WhatsApp: no máximo 2 frases curtas por mensagem. Se precisar de mais, quebre em até 3 mensagens com ---. Nunca mande bloco de texto.
@@ -670,7 +675,7 @@ export function criarNucleo(S, ctx = {}) {
   11. Reparo e assistência técnica: não fale de pagamento (formas, parcelas, Pix, desconto à vista) antes de o cliente aprovar o orçamento ou a OS. Se ele perguntar antes, responda curto.
   12. iPhone de entrada (troca): depois de avaliar o usado, ANTES de falar qualquer valor, pergunte se ele prefere pagar a diferença à vista ou parcelado. Conforme a resposta, passe só esse valor: à vista, só o valor à vista da diferença; parcelado, só a simulação parcelada (nas vezes que ele pediu; se não disse, simule em 12x e diga que dá para ajustar).
   13. Modelo, cor ou armazenamento que o cliente pediu e que não está no catálogo ou está sem estoque (inclusive Xiaomi e acessórios que não estão no catálogo nem nas instruções do dono): não diga logo que não tem. Use pedir_decisao_dono, com o que há de mais parecido no catálogo e a sua sugestão, e diga ao cliente, curto e uma vez só, que vai ver e já retorna. Não ofereça outra opção enquanto a decisão não chega, a não ser que o cliente peça. Se o dono já respondeu sobre esse aparelho (bloco "JÁ CONFIRMADO PELO DONO"), não pergunte de novo: o que ele disse vale mais que o catálogo. Quando a decisão chegar (mensagem de sistema), siga o que o dono decidiu.
-  14. Pedido de desconto ("faz por menos?", "tem desconto?", "consegue melhorar?", "à vista sai quanto?" depois de já ter o valor): use pedir_desconto_dono com o valor que você sugere (um desconto pequeno que feche a venda) e não responda nada ao cliente nessa vez. Quando o dono liberar, responda na hora, animado ("Olá, consigo sim um descontinho pra ti!"), com o valor novo, e conduza para fechar. Se ele negar, segure o preço com valor, sem dizer que consultou alguém.
+  14. Pedido de desconto ("faz por menos?", "tem desconto?", "consegue melhorar?", "à vista sai quanto?" depois de já ter o valor) ou contraproposta ("faz 1500?", "te dou 1800 no pix"): use pedir_desconto_dono (com oferta_cliente = o valor que ele ofereceu, se ofereceu). Se ele JÁ sabia o preço, não responda nada ao cliente nessa vez. Se ele fez a oferta SEM saber o preço (ex.: "faz 1500 à vista?" logo de cara), passe agora o preço normal, curto, com um benefício, sem comentar a oferta e sem dizer que vai ver desconto; quando o dono liberar, você volta com a boa notícia. Se ainda não sabe qual aparelho é, pergunte primeiro e peça o desconto quando souber. Quando o dono liberar, responda na hora, animado ("Olá, consigo sim um descontinho pra ti!"), com o valor novo, e conduza para fechar. Se ele negar, segure o preço com valor, sem dizer que consultou alguém.
 
 ${loja.soNaEntrega !== false ? `  15. Pagamento é SEMPRE só na entrega (ou na retirada na loja): o cliente paga quando recebe o aparelho. Ao falar de pagamento, fechar a venda ou combinar a entrega, avise com naturalidade que o pagamento é só na entrega.${loja.pixChave ? ` Se o cliente for pagar no Pix ou pedir a chave, pode mandar a chave Pix para ele deixar salva, dizendo que é para pagar na hora da entrega. Mande a chave numa mensagem separada (com ---), só ela, para ficar fácil de copiar: "${loja.pixChave}", e diga de quem é (${loja.pixTitular || marca.nome}${loja.pixBanco ? `, ${loja.pixBanco}` : ""}).` : ""} Nunca peça pagamento antecipado, sinal, adiantamento ou comprovante antes da entrega, a não ser que a nota de sistema diga que o dono pediu isso nesta negociação; aí siga exatamente o que ele pediu (valor e prazo). Reparo segue a regra 11.
 ` : ""}
@@ -762,10 +767,10 @@ ${loja.entregas ? `  16. Entrega: antes de falar a taxa, pergunte o bairro e a c
       },
       {
         name: "pedir_desconto_dono", strict: true,
-        description: "O cliente pediu desconto (\"faz por menos?\", \"tem desconto?\", \"consegue melhorar?\"). Manda no WhatsApp do dono o pedido de desconto com o valor que você sugere. Use direto e NÃO responda nada ao cliente nesta vez: nem que vai consultar, nem que vai ver. A resposta do dono chega depois, como mensagem de sistema.",
+        description: "O cliente pediu desconto (\"faz por menos?\", \"tem desconto?\", \"consegue melhorar?\") ou fez uma contraproposta (\"faz 1500?\"). Manda no WhatsApp do dono o pedido de desconto com a oferta do cliente e o valor que você sugere. Se o cliente já sabia o preço, NÃO responda nada ao cliente nesta vez. Se ele ofereceu sem saber o preço, passe o preço normal (sem comentar a oferta). A resposta do dono chega depois, como mensagem de sistema.",
         input_schema: obj(
-          { id_catalogo: "string", produto: "string", valor_atual: "number", valor_sugerido: "number", forma_pagamento: "string", resumo: "string" },
-          { id_catalogo: "id do item no catálogo, ou vazio", produto: "Modelo, armazenamento, cor e condição", valor_atual: "Preço que o cliente já recebeu, em reais", valor_sugerido: "Quanto ficaria com o desconto que você sugere (um desconto pequeno, que feche a venda)", forma_pagamento: "Pix, cartão em Nx, etc., ou 'a combinar'", resumo: "Uma linha sobre o cliente e a negociação, para o dono" },
+          { id_catalogo: "string", produto: "string", valor_atual: "number", valor_sugerido: "number", oferta_cliente: "number", cliente_ja_sabe_o_preco: "boolean", forma_pagamento: "string", resumo: "string" },
+          { id_catalogo: "id do item no catálogo, ou vazio", produto: "Modelo, armazenamento, cor e condição", valor_atual: "Preço que o cliente já recebeu, em reais", valor_sugerido: "Quanto ficaria com o desconto que você sugere (um desconto pequeno, que feche a venda)", oferta_cliente: "Valor que o cliente ofereceu, em reais (0 se ele só pediu desconto sem dar valor)", cliente_ja_sabe_o_preco: "true se você já tinha passado o preço a ele nesta conversa", forma_pagamento: "Pix, cartão em Nx, etc., ou 'a combinar'", resumo: "Uma linha sobre o cliente e a negociação, para o dono" },
         ),
       },
       {
@@ -885,22 +890,25 @@ ${loja.entregas ? `  16. Entrega: antes de falar a taxa, pergunte o bairro e a c
         return { status: "pendente", codigo: a.codigo, instrucao: "Decisão enviada. Diga ao cliente, curto e uma vez só, que vai ver e já retorna (sem citar ninguém). Não ofereça outra opção enquanto a decisão não chega." };
       }
       case "pedir_desconto_dono": {
-        conversa(contatoId).silenciar = true; // o cliente não fica sabendo: nada sai nesta rodada
+        const jaSabe = ent.cliente_ja_sabe_o_preco !== false;
+        if (jaSabe) conversa(contatoId).silenciar = true; // o cliente não fica sabendo: nada sai nesta rodada
         const pendente = S.aprovacoes.find((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo === "desconto");
         if (pendente) return { status: "pendente", codigo: pendente.codigo, aviso: "Já existe um pedido de desconto esperando o dono. Não responda nada ao cliente agora." };
         S.seq.aprov = (S.seq.aprov || 0) + 1;
         const a = {
           id: uid("a"), tipo: "desconto", codigo: `A${S.seq.aprov}`, contatoId, idCatalogo: ent.id_catalogo || "", produto: ent.produto,
-          valorAtual: Number(ent.valor_atual) || 0, valor: Number(ent.valor_sugerido) || 0, pagamento: ent.forma_pagamento, resumo: ent.resumo, status: "pendente", criadaEm: agoraISO(),
+          valorAtual: Number(ent.valor_atual) || 0, valor: Number(ent.valor_sugerido) || 0, oferta: Number(ent.oferta_cliente) || 0, pagamento: ent.forma_pagamento, resumo: ent.resumo, status: "pendente", criadaEm: agoraISO(),
         };
         S.aprovacoes.push(a);
         c.proximoPasso = `Desconto #${a.codigo} esperando o dono`;
-        const texto = `💸 *Desconto* #${a.codigo}\n\n👤 ${nomeCli(c)}${c.telefone ? ` (+${c.telefone})` : ""}\n📱 ${a.produto}\n💰 Preço atual: ${a.valorAtual ? brl(a.valorAtual) : "-"}${a.pagamento ? ` · ${a.pagamento}` : ""}\n🏷️ O cliente pediu desconto.${a.valor ? ` Sugestão: *${brl(a.valor)}*` : ""}\n📝 ${a.resumo || "-"}\n\nLibero? Responda *SIM*${a.valor ? ` (fica ${brl(a.valor)})` : ""}, *SIM 3850* (outro valor) ou *NÃO*. O cliente não foi avisado.`;
+        const texto = `💸 *Desconto* #${a.codigo}\n\n👤 ${nomeCli(c)}${c.telefone ? ` (+${c.telefone})` : ""}\n📱 ${a.produto}\n💰 Preço atual: ${a.valorAtual ? brl(a.valorAtual) : "-"}${a.pagamento ? ` · ${a.pagamento}` : ""}\n🏷️ ${a.oferta ? `O cliente ofereceu *${brl(a.oferta)}*.` : "O cliente pediu desconto."}${a.valor ? ` Sugestão da IA: *${brl(a.valor)}*` : ""}\n📝 ${a.resumo || "-"}\n\nLibero? Responda *SIM*${a.valor ? ` (fica ${brl(a.valor)})` : ""}, *SIM 3850* (outro valor) ou *NÃO*. O cliente não foi avisado.`;
         mensagemAoDono(texto, a.id);
         evento(contatoId, `💸 IA pediu desconto ao dono: ${a.produto} de ${brl(a.valorAtual)} para ${brl(a.valor)} (#${a.codigo})`);
         salvar("aprovacoes", "seq", "contatos");
         notificar("Pedido de desconto", `${nomeCli(c)}: ${a.produto} ${brl(a.valor)}`);
-        return { status: "pendente", codigo: a.codigo, instrucao: "Pedido enviado ao dono. NÃO responda nada ao cliente agora (sua resposta desta vez não será enviada). Quando o dono responder, você fala com o cliente." };
+        return jaSabe
+          ? { status: "pendente", codigo: a.codigo, instrucao: "Pedido enviado ao dono. NÃO responda nada ao cliente agora (sua resposta desta vez não será enviada). Quando o dono responder, você fala com o cliente." }
+          : { status: "pendente", codigo: a.codigo, instrucao: "Pedido enviado ao dono em silêncio. Agora passe ao cliente o preço normal, curto, com um benefício (ex.: garantia), sem comentar a oferta dele e sem dizer que vai ver desconto. Responda também o resto do que ele disse (ex.: retirada). Quando o dono responder, você volta com a novidade." };
       }
       case "pedir_aprovacao_dono": {
         const pendente = S.aprovacoes.find((a) => a.contatoId === contatoId && a.status === "pendente" && a.tipo !== "decisao" && a.tipo !== "desconto");
@@ -1484,7 +1492,7 @@ Em "tags", até 3 palavras curtas úteis para achar a conversa (ex.: "iphone 15"
   const ehLeadAnuncio = (c) => c?.origemLead === "anuncio";
 
   // ---------------------------------------------------------------- saudação com menu
-  const textoSaudacao = () => semComentarios(S.config.saudacao?.texto || "");
+  const textoSaudacao = () => semComentarios(S.config.saudacao?.texto || "").replace(/agilizar seu a[\s\u200b-\u200d\ufeff"'”]*$/u, "agilizar seu atendimento.");
   /** Chame ANTES de registrar a mensagem nova do cliente: primeira conversa, ou dias sem falar com a loja. */
   function precisaSaudacao(contatoId, agora = new Date()) {
     const cfg = S.config.saudacao;

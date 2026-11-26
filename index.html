@@ -1798,7 +1798,7 @@ TELAS.aprovacoes = () => {
     const topo = (tipo, corTipo, st, corSt) => `<div class="aprov-topo"><span class="etq ${corTipo}">${tipo}</span><b class="espaco">#${a.codigo} · ${esc(a.produto)}</b><span class="etq ${corSt}">${st}</span>${a.criadaEm ? `<span class="suave peq">${quandoRelativo(a.criadaEm)}</span>` : ""}</div>`;
     if (a.tipo === "desconto") return `<div class="cartao cartao-aprov ${a.status}">
       ${topo("Desconto", "az", a.status === "pendente" ? "Decidir" : a.status === "aprovada" ? "Liberado" : "Negado", a.status === "pendente" ? "am" : a.status === "aprovada" ? "vd" : "vm")}
-      ${meta([["Cliente", cli], ["Pedido", `de ${brl(a.valorAtual)} para <b>${brl(a.valor)}</b>`], ["Pagamento", esc(a.pagamento || "")], ["Resumo", esc(a.resumo || "")], ["Liberado por", a.valorFinal ? `<b>${brl(a.valorFinal)}</b>` : ""]])}
+      ${meta([["Cliente", cli], ["Oferta do cliente", a.oferta ? `<b>${brl(a.oferta)}</b>` : ""], ["Pedido", `de ${brl(a.valorAtual)} para <b>${brl(a.valor)}</b>`], ["Pagamento", esc(a.pagamento || "")], ["Resumo", esc(a.resumo || "")], ["Liberado por", a.valorFinal ? `<b>${brl(a.valorFinal)}</b>` : ""]])}
       ${a.status === "pendente" ? `<p class="suave peq" style="margin:-6px 0 12px">O cliente não foi avisado deste pedido.</p><div class="aprov-acoes">
         <button class="btn ok" data-a="aprovar" data-id="${a.id}">${ICONES.check}Liberar ${brl(a.valor)}</button>
         <input type="number" id="valor-${a.id}" data-manter placeholder="Outro valor (R$)" style="width:150px">
